@@ -23,3 +23,6 @@ def init_logging(config: LoggingConfig) -> None:
 
     root_logger.setLevel(config.level.upper())
     root_logger.addHandler(handler)
+
+    # Suppress noisy Chroma telemetry logs; they are not useful for workflow debugging.
+    logging.getLogger("chromadb.telemetry.product.posthog").setLevel(logging.CRITICAL)

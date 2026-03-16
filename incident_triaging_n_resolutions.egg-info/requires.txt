@@ -7,6 +7,7 @@ langchain-chroma<0.2,>=0.1
 langgraph<0.3,>=0.2
 chromadb<0.6,>=0.5
 sqlalchemy<3.0,>=2.0
+tavily-python<0.6,>=0.5
 
 [dev]
 pytest<9.0,>=8.3

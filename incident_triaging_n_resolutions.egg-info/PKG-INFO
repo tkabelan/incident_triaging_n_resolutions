@@ -13,6 +13,7 @@ Requires-Dist: langchain-chroma<0.2,>=0.1
 Requires-Dist: langgraph<0.3,>=0.2
 Requires-Dist: chromadb<0.6,>=0.5
 Requires-Dist: sqlalchemy<3.0,>=2.0
+Requires-Dist: tavily-python<0.6,>=0.5
 Provides-Extra: dev
 Requires-Dist: pytest<9.0,>=8.3; extra == "dev"
 Requires-Dist: pytest-cov<6.0,>=5.0; extra == "dev"

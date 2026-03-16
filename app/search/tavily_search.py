@@ -4,17 +4,18 @@ import logging
 import os
 from typing import Any
 
-import httpx
+from tavily import TavilyClient
 
 from app.schemas.processed_errors import WebSearchResult
 
 
 logger = logging.getLogger(__name__)
+MAX_ERROR_MESSAGE_LENGTH = 399
 
 
 class TavilySearchService:
     def __init__(self, api_key: str, max_results: int = 3, search_depth: str = "basic") -> None:
-        self._api_key = api_key
+        self._client = TavilyClient(api_key=api_key)
         self._max_results = max_results
         self._search_depth = search_depth
 
@@ -31,18 +32,17 @@ class TavilySearchService:
 
     def search(self, query: str) -> list[WebSearchResult]:
         logger.info("Running Tavily search for query: %s", query)
-        response = httpx.post(
-            "https://api.tavily.com/search",
-            json={
-                "api_key": self._api_key,
-                "query": query,
-                "max_results": self._max_results,
-                "search_depth": self._search_depth,
-            },
-            timeout=30.0,
-        )
-        response.raise_for_status()
-        payload = response.json()
+        try:
+            payload = self._client.search(
+                query=query,
+                max_results=self._max_results,
+                search_depth=self._search_depth,
+                topic="general",
+                include_answer=False,
+            )
+        except Exception as exc:
+            message = f"Tavily search failed: {exc}"
+            raise ValueError(_truncate_message(message)) from exc
         return [
             WebSearchResult(
                 title=item.get("title", ""),
@@ -52,3 +52,9 @@ class TavilySearchService:
             )
             for item in payload.get("results", [])
         ]
+
+
+def _truncate_message(message: str) -> str:
+    if len(message) <= MAX_ERROR_MESSAGE_LENGTH:
+        return message
+    return message[: MAX_ERROR_MESSAGE_LENGTH - 3] + "..."
