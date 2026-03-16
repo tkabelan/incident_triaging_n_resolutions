@@ -1,0 +1,25 @@
+{
+  "row_id": "3",
+  "source_file": "error_prefix_counts.csv",
+  "raw_storage_reference": "data/raw/error_prefix_counts.csv-3.json",
+  "error_prefix": "ExecutionError: BRICKFLOW_USER_OR_DBR_ERROR: This is an error thrown in user code. \nBRICKFLOW_INPUT_ARGS: {}\nOriginal Exception Message: An error occurred while calling o503.",
+  "error_summary": "ExecutionError: BRICKFLOW_USER_OR_DBR_ERROR: This is an error thrown in user code.",
+  "normalized_prefix": "executionerror",
+  "category_hint": "executionerror",
+  "keywords": [
+    "executionerror:",
+    "brickflow_user_or_dbr_error:",
+    "error",
+    "thrown",
+    "user",
+    "code.",
+    "brickflow_input_args:",
+    "original"
+  ],
+  "error_type": "application_error",
+  "exception_type": "ExecutionError",
+  "severity": "medium",
+  "service_hint": "application",
+  "retryable": false,
+  "resolution_type": "code_fix"
+}

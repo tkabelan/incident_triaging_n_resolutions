@@ -1,0 +1,25 @@
+{
+  "row_id": "1",
+  "source_file": "error_prefix_counts.csv",
+  "raw_storage_reference": "data/raw/error_prefix_counts.csv-1.json",
+  "error_prefix": "ValueError: Error loading CSV files from S3: An error occurred while calling o484.csv.",
+  "error_summary": "ValueError: Error loading CSV files from S3: An error occurred while calling o484.csv.",
+  "normalized_prefix": "valueerror",
+  "category_hint": "valueerror",
+  "keywords": [
+    "valueerror:",
+    "error",
+    "loading",
+    "csv",
+    "files",
+    "s3:",
+    "occurred",
+    "o484.csv."
+  ],
+  "error_type": "unknown",
+  "exception_type": "ValueError",
+  "severity": "medium",
+  "service_hint": null,
+  "retryable": false,
+  "resolution_type": "manual_investigation"
+}

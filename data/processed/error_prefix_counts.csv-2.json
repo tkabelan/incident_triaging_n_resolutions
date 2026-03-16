@@ -1,0 +1,25 @@
+{
+  "row_id": "2",
+  "source_file": "error_prefix_counts.csv",
+  "raw_storage_reference": "data/raw/error_prefix_counts.csv-2.json",
+  "error_prefix": "ConcurrentAppendException: [DELTA_CONCURRENT_APPEND] ConcurrentAppendException: Files were added to the root of the table by a concurrent update. Please try the operation again.",
+  "error_summary": "ConcurrentAppendException: [DELTA_CONCURRENT_APPEND] ConcurrentAppendException: Files were added to the root of the table by a concurrent update. Please try the operation again.",
+  "normalized_prefix": "concurrentappendexception",
+  "category_hint": "concurrentappendexception",
+  "keywords": [
+    "concurrentappendexception:",
+    "delta_concurrent_append",
+    "files",
+    "were",
+    "added",
+    "root",
+    "table",
+    "concurrent"
+  ],
+  "error_type": "concurrency_conflict",
+  "exception_type": "ConcurrentAppendException",
+  "severity": "medium",
+  "service_hint": "delta_lake",
+  "retryable": true,
+  "resolution_type": "retry_or_reschedule"
+}

@@ -1,0 +1,57 @@
+[
+  {
+    "kb_id": "kb-access-denied-s3",
+    "title": "S3 access denied during file load",
+    "category": "access_denied",
+    "symptoms": [
+      "AccessDeniedException",
+      "Forbidden",
+      "403 Forbidden",
+      "S3"
+    ],
+    "resolution": "Validate the IAM role, bucket policy, and object path permissions for the affected S3 location.",
+    "notes": "This usually indicates missing read permissions or blocked object metadata access.",
+    "error_type": "access_denied",
+    "exception_type": "AccessDeniedException",
+    "severity": "high",
+    "service_hint": "s3",
+    "retryable": false,
+    "resolution_type": "permission_fix"
+  },
+  {
+    "kb_id": "kb-file-not-found-s3",
+    "title": "S3 file or path not found",
+    "category": "file_not_found",
+    "symptoms": [
+      "FileNotFoundException",
+      "No such file or directory",
+      "s3://"
+    ],
+    "resolution": "Check the upstream export path, partition availability, and exact S3 prefix for the missing file.",
+    "notes": "This is commonly caused by late-arriving partitions or incorrect path construction.",
+    "error_type": "file_not_found",
+    "exception_type": "FileNotFoundException",
+    "severity": "medium",
+    "service_hint": "storage",
+    "retryable": true,
+    "resolution_type": "path_fix"
+  },
+  {
+    "kb_id": "kb-concurrency-conflict",
+    "title": "Concurrent update conflict",
+    "category": "concurrency_conflict",
+    "symptoms": [
+      "conflicting commit",
+      "concurrency control",
+      "WriteSerializable"
+    ],
+    "resolution": "Retry the write after checking for overlapping transactions and align the job schedule to avoid concurrent writes.",
+    "notes": "Delta Lake conflicts often come from competing update jobs against the same target.",
+    "error_type": "concurrency_conflict",
+    "exception_type": "ConcurrentAppendException",
+    "severity": "medium",
+    "service_hint": "delta_lake",
+    "retryable": true,
+    "resolution_type": "retry_or_reschedule"
+  }
+]
