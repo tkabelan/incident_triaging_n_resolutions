@@ -93,3 +93,10 @@ class WebSearchResult(BaseModel):
     url: str
     content: str
     score: float | None = None
+
+
+class RefinementResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    classification: ClassificationResolutionResult
+    verification: VerificationResult

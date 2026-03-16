@@ -16,6 +16,7 @@ from app.storage.processed_error_storage import ProcessedErrorStorageService
 
 
 logger = logging.getLogger(__name__)
+MAX_WEB_SEARCH_QUERY_LENGTH = 380
 
 
 class ErrorProcessingWorkflow:
@@ -73,6 +74,7 @@ class ErrorProcessingWorkflow:
                 "primary_llm": {"status": "not_run", "confidence": None, "error": None},
                 "verification_llm": {"status": "not_run", "confidence": None, "error": None},
                 "web_search": {"status": "not_run", "confidence": None, "error": None},
+                "refinement_llm": {"status": "not_run", "confidence": None, "error": None},
             },
             "kb_match_found": False,
             "kb_direct_match": False,
@@ -122,6 +124,7 @@ class ErrorProcessingWorkflow:
                 result["stage_details"]["primary_llm"]["status"] = "skipped"
                 result["stage_details"]["verification_llm"]["status"] = "skipped"
                 result["stage_details"]["web_search"]["status"] = "skipped"
+                result["stage_details"]["refinement_llm"]["status"] = "skipped"
                 return result
 
             # Agentic decision point 2: use the primary LLM only when retrieval is not strong enough.
@@ -164,6 +167,7 @@ class ErrorProcessingWorkflow:
                 result["steps"].append("kb_update_completed")
                 result["status"] = "success"
                 result["stage_details"]["web_search"]["status"] = "skipped"
+                result["stage_details"]["refinement_llm"]["status"] = "skipped"
             elif verification.needs_web_search and self._settings.search.enabled:
                 # Agentic decision point 5: gather external evidence only when internal evidence is insufficient.
                 result["steps"].append("web_search_started")
@@ -177,9 +181,51 @@ class ErrorProcessingWorkflow:
                 result["web_search_results"] = [item.model_dump() for item in web_results]
                 result["steps"].append("web_search_completed")
                 result["stage_details"]["web_search"]["status"] = "pass" if web_results else "fail"
-                result["status"] = "needs_refinement"
+                # Agentic decision point 6: refine the answer using both KB and web evidence.
+                result["steps"].append("refinement_started")
+                try:
+                    refined_classification = self._classifier.refine_with_web_search(
+                        processed_record,
+                        evidence,
+                        web_results,
+                    )
+                except Exception as exc:
+                    result["stage_details"]["refinement_llm"]["status"] = "fail"
+                    result["stage_details"]["refinement_llm"]["error"] = self._format_error(exc)
+                    raise
+                result["classification"] = refined_classification.model_dump()
+                result["stage_details"]["refinement_llm"]["status"] = "pass"
+                result["stage_details"]["refinement_llm"]["confidence"] = refined_classification.confidence
+                result["steps"].append("refinement_completed")
+
+                result["steps"].append("refinement_verification_started")
+                try:
+                    refined_verification = self._mcp_client.verify_resolution(
+                        processed_record,
+                        refined_classification,
+                        evidence,
+                    )
+                except Exception as exc:
+                    result["stage_details"]["verification_llm"]["error"] = self._format_error(exc)
+                    raise
+                result["verification"] = refined_verification.model_dump()
+                result["steps"].append("refinement_verification_completed")
+                result["stage_details"]["verification_llm"]["status"] = "pass" if refined_verification.passed else "fail"
+                result["stage_details"]["verification_llm"]["confidence"] = refined_verification.confidence
+
+                if refined_verification.passed:
+                    result["steps"].append("kb_update_started")
+                    result["kb_update_reference"] = self._retriever.upsert_verified_resolution(
+                        processed_record,
+                        refined_classification,
+                    )
+                    result["steps"].append("kb_update_completed")
+                    result["status"] = "success_after_refinement"
+                else:
+                    result["status"] = "refinement_failed"
             else:
                 result["stage_details"]["web_search"]["status"] = "skipped"
+                result["stage_details"]["refinement_llm"]["status"] = "skipped"
                 result["status"] = "verification_failed"
         except Exception as exc:
             logger.exception("Failed processing error row %s", raw_record.row_id)
@@ -193,10 +239,18 @@ class ErrorProcessingWorkflow:
         processed_error: Any,
         classification: Any,
     ) -> str:
-        return (
-            f"{processed_error.error_prefix} {processed_error.error_summary} "
-            f"{classification.category} {classification.proposed_resolution}"
-        )
+        parts = [
+            processed_error.error_type,
+            processed_error.exception_type or "",
+            processed_error.service_hint or "",
+            classification.category,
+            processed_error.error_summary,
+            " ".join(processed_error.keywords[:4]),
+        ]
+        query = " ".join(part.strip() for part in parts if part and part.strip())
+        if len(query) <= MAX_WEB_SEARCH_QUERY_LENGTH:
+            return query
+        return query[:MAX_WEB_SEARCH_QUERY_LENGTH].rstrip()
 
     def _format_error(self, exc: Exception) -> dict[str, Any]:
         error_type = exc.__class__.__name__

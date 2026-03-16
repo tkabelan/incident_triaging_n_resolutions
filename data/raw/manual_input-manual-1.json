@@ -1,6 +1,6 @@
 {
   "row_id": "manual-1",
-  "error_prefix": "[CANNOT_OPEN_SOCKET] Can not open socket: [\"tried to connect to ('127.0.0.1', 37311), but an error occurred: [Errno 111] Connection refused\"]",
-  "error_message": "[CANNOT_OPEN_SOCKET] Can not open socket: [\"tried to connect to ('127.0.0.1', 37311), but an error occurred: [Errno 111] Connection refused\"]",
+  "error_prefix": "[CANNOT_OPEN_SOCKET]",
+  "error_message": "[CANNOT_OPEN_SOCKET] Can not open socket]",
   "source_file": "manual_input"
 }

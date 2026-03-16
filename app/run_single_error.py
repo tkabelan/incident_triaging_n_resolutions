@@ -8,7 +8,7 @@ from app.logging_config import init_logging
 from app.workflows.error_processing import ErrorProcessingWorkflow
 
 
-DEFAULT_ERROR_TEXT = """[CANNOT_OPEN_SOCKET] Can not open socket: ["tried to connect to ('127.0.0.1', 37311), but an error occurred: [Errno 111] Connection refused"]"""
+DEFAULT_ERROR_TEXT = """[CANNOT_OPEN_SOCKET] Can not open socket]"""
 
 
 def main() -> None:
@@ -46,6 +46,21 @@ def _format_output(result: dict[str, Any]) -> dict[str, Any]:
     stages["web_search"].update(
         {
             "results": len(web_results),
+            "items": [
+                {
+                    "title": item.get("title"),
+                    "url": item.get("url"),
+                    "score": item.get("score"),
+                    "content": item.get("content"),
+                }
+                for item in web_results
+            ],
+        }
+    )
+    stages["refinement_llm"].update(
+        {
+            "classification": classification.get("category"),
+            "resolution": classification.get("proposed_resolution"),
         }
     )
 

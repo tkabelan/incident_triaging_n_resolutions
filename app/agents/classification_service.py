@@ -9,6 +9,7 @@ from app.schemas.processed_errors import (
     ClassificationResolutionResult,
     GroundingEvidence,
     ProcessedErrorRecord,
+    WebSearchResult,
 )
 
 
@@ -51,11 +52,9 @@ class PrimaryClassificationService:
         processed_error: ProcessedErrorRecord,
         evidence: list[GroundingEvidence],
     ) -> ClassificationResolutionResult:
-        draft = self._structured_llm.invoke(
-            {
-                "processed_error": processed_error.model_dump_json(indent=2),
-                "evidence": _format_evidence(evidence),
-            }
+        draft = self._invoke(
+            processed_error=processed_error,
+            evidence_text=_format_evidence(evidence),
         )
         logger.info(
             "Produced classification for row %s with category %s",
@@ -68,6 +67,42 @@ class PrimaryClassificationService:
             reasoning=draft.reasoning,
             proposed_resolution=draft.proposed_resolution,
             evidence=evidence,
+        )
+
+    def refine_with_web_search(
+        self,
+        processed_error: ProcessedErrorRecord,
+        evidence: list[GroundingEvidence],
+        web_results: list[WebSearchResult],
+    ) -> ClassificationResolutionResult:
+        draft = self._invoke(
+            processed_error=processed_error,
+            evidence_text=_format_evidence(evidence) + "\n\nExternal web evidence:\n" + _format_web_results(web_results),
+        )
+        logger.info(
+            "Produced refined classification for row %s with category %s",
+            processed_error.row_id,
+            draft.category,
+        )
+        return ClassificationResolutionResult(
+            category=draft.category,
+            confidence=draft.confidence,
+            reasoning=draft.reasoning,
+            proposed_resolution=draft.proposed_resolution,
+            evidence=evidence,
+        )
+
+    def _invoke(
+        self,
+        *,
+        processed_error: ProcessedErrorRecord,
+        evidence_text: str,
+    ) -> ClassificationResolutionDraft:
+        return self._structured_llm.invoke(
+            {
+                "processed_error": processed_error.model_dump_json(indent=2),
+                "evidence": evidence_text,
+            }
         )
 
 
@@ -85,5 +120,21 @@ def _format_evidence(evidence: list[GroundingEvidence]) -> str:
                 f"Score: {item.score}"
             )
             for item in evidence
+        ]
+    )
+
+
+def _format_web_results(results: list[WebSearchResult]) -> str:
+    if not results:
+        return "No web search results found."
+    return "\n\n".join(
+        [
+            (
+                f"Title: {item.title}\n"
+                f"URL: {item.url}\n"
+                f"Content: {item.content}\n"
+                f"Score: {item.score}"
+            )
+            for item in results
         ]
     )

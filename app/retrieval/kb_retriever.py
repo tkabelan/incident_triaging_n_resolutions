@@ -139,7 +139,11 @@ class KnowledgeBaseRetriever:
             "retryable": processed_error.retryable,
             "resolution_type": processed_error.resolution_type,
         }
-        self._vector_store.add_texts(texts=[text], metadatas=[metadata], ids=[kb_id])
+        self._vector_store.add_texts(
+            texts=[text],
+            metadatas=[_sanitize_metadata(metadata)],
+            ids=[kb_id],
+        )
         logger.info("Upserted verified resolution %s into vector KB", kb_id)
         return kb_id
 
@@ -151,20 +155,22 @@ class KnowledgeBaseRetriever:
         entries = self._load_entries()
         texts = [self._to_document_text(entry) for entry in entries]
         metadatas = [
-            {
-                "kb_id": entry.kb_id,
-                "title": entry.title,
-                "category": entry.category,
-                "resolution": entry.resolution,
-                "notes": entry.notes,
-                "source_type": entry.source_type,
-                "error_type": entry.error_type or entry.category,
-                "exception_type": entry.exception_type,
-                "severity": entry.severity or "medium",
-                "service_hint": entry.service_hint,
-                "retryable": entry.retryable,
-                "resolution_type": entry.resolution_type,
-            }
+            _sanitize_metadata(
+                {
+                    "kb_id": entry.kb_id,
+                    "title": entry.title,
+                    "category": entry.category,
+                    "resolution": entry.resolution,
+                    "notes": entry.notes,
+                    "source_type": entry.source_type,
+                    "error_type": entry.error_type or entry.category,
+                    "exception_type": entry.exception_type,
+                    "severity": entry.severity or "medium",
+                    "service_hint": entry.service_hint,
+                    "retryable": entry.retryable,
+                    "resolution_type": entry.resolution_type,
+                }
+            )
             for entry in entries
         ]
         ids = [entry.kb_id for entry in entries]
@@ -205,3 +211,7 @@ def _build_embeddings(settings: Any) -> Any:
             api_key=os.getenv(settings.models.openai_api_key_env_var),
         )
     raise ValueError(f"Unsupported embedding provider: {settings.models.embedding_provider}")
+
+
+def _sanitize_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in metadata.items() if value is not None}

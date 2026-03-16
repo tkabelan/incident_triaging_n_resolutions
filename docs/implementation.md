@@ -27,6 +27,7 @@ Implement current foundation plus selected Phase 2 tasks:
 19. Add retrieval-first short-circuit for repeated errors
 20. Add KB write-back for verified outcomes
 21. Add single-error runner with step trace for manual testing
+22. Implement Step 10: refine final answer after web search
 
 ## Status
 
@@ -53,6 +54,7 @@ Implement current foundation plus selected Phase 2 tasks:
 - [x] Retrieval-first short-circuit for strong KB matches
 - [x] KB write-back for verified outcomes
 - [x] Single-error runner with step trace
+- [x] Step 10: refine final answer after web search
 
 ## Implemented Files
 
@@ -169,7 +171,7 @@ Current workflow shape:
   Status: done
 
 - Step 10: Refine final answer
-  Status: not started
+  Status: done
 
 - Step 11: Update KB
   Status: done
