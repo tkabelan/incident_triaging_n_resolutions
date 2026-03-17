@@ -96,6 +96,8 @@ def test_run_single_error_returns_step_trace() -> None:
     result = workflow.run_single_error("ValueError: AccessDeniedException Forbidden")
 
     assert result["status"] == "resolved_from_kb"
+    assert result["agent_trace"]["final_status"] == "resolved_from_kb"
+    assert result["agent_trace"]["stages"]["chroma_db"]["direct_match"] is True
     assert "raw_ingestion_started" in result["steps"]
     assert "kb_retrieval_completed" in result["steps"]
     assert "resolved_from_kb" in result["steps"]

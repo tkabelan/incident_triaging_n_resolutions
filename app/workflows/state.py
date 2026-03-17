@@ -165,6 +165,7 @@ class AgentWorkflowStateModel(BaseModel):
             "row_id": self.row_id,
             "status": self.status,
             "steps": list(self.steps),
+            "agent_trace": self._build_agent_trace(),
             "stage_details": {
                 name: detail.model_dump(exclude_none=True) for name, detail in self.stage_details.items()
             },
@@ -188,6 +189,92 @@ class AgentWorkflowStateModel(BaseModel):
             "memory_signals": dict(self.memory_signals),
             "error": self.error,
         }
+
+    def _build_agent_trace(self) -> dict[str, Any]:
+        classification = self.classification_result
+        verification = self.verification_result
+        web_items = [
+            {
+                "title": item.title,
+                "url": item.url,
+                "score": item.score,
+                "content": item.content,
+            }
+            for item in self.web_search_results
+        ]
+        stages = {
+            "chroma_db": {
+                **self.stage_details["chroma_db"].model_dump(exclude_none=True),
+                "direct_match": self.direct_match is not None,
+                "evidence_count": len(self.evidence),
+            },
+            "planner": {
+                **self.stage_details["planner"].model_dump(exclude_none=True),
+                "next_action": self.next_action,
+                "decision_reason": self.decision_reason,
+            },
+            "primary_llm": {
+                **self.stage_details["primary_llm"].model_dump(exclude_none=True),
+                "classification": classification.category if classification else None,
+                "resolution": classification.proposed_resolution if classification else None,
+                "attempts": self.classification_attempts,
+            },
+            "verification_llm": {
+                **self.stage_details["verification_llm"].model_dump(exclude_none=True),
+                "passed": verification.passed if verification else None,
+                "needs_web_search": verification.needs_web_search if verification else None,
+                "reasoning": verification.reasoning if verification else None,
+            },
+            "web_search": {
+                **self.stage_details["web_search"].model_dump(exclude_none=True),
+                "results": len(self.web_search_results),
+                "items": web_items,
+            },
+            "refinement_llm": {
+                **self.stage_details["refinement_llm"].model_dump(exclude_none=True),
+                "classification": classification.category if "refinement_completed" in self.steps and classification else None,
+                "resolution": classification.proposed_resolution if "refinement_completed" in self.steps and classification else None,
+                "attempts": self.refinement_attempts,
+            },
+            "reflection": {
+                **self.stage_details["reflection"].model_dump(exclude_none=True),
+                "notes": list(self.reflection_notes),
+            },
+            "human_review": {
+                **self.stage_details["human_review"].model_dump(exclude_none=True),
+                "reason": self.human_review_reason,
+            },
+        }
+        return {
+            "final_status": self.status,
+            "outcome_source": self.outcome_source,
+            "classification": classification.category if classification else None,
+            "resolution": classification.proposed_resolution if classification else None,
+            "branch_explanation": self._build_branch_explanation(),
+            "kb_update_triggered": self.kb_update_reference is not None,
+            "kb_update_reference": self.kb_update_reference,
+            "kb_update_reason": self.decision_reason if self.kb_update_reference is not None else None,
+            "steps": list(self.steps),
+            "stages": stages,
+        }
+
+    def _build_branch_explanation(self) -> str:
+        if self.status == "resolved_from_kb":
+            return "The error was resolved directly from the KB, so model verification, web search, and refinement were skipped."
+        verification = self.verification_result
+        if self.status == "success" and verification and verification.passed:
+            return "The primary classification passed verification strongly enough, so no web search or refinement was needed."
+        if self.status == "success_after_refinement":
+            return "The primary path was not sufficient, so the agent used web search and refinement before updating the KB."
+        if self.status == "human_review_required":
+            return "The agent could not reach a reliable autonomous answer within policy, so it routed the case to human review."
+        if self.status == "verification_failed":
+            return "Verification did not approve the answer, and the workflow stopped without fallback refinement."
+        if self.status == "refinement_failed":
+            return "Refinement completed, but the refined answer still did not satisfy verification policy."
+        if self.status == "failed":
+            return "The workflow failed before reaching a final autonomous decision."
+        return "The workflow completed without a specialized branch explanation."
 
 
 def default_stage_detail_models() -> dict[str, StageDetailModel]:

@@ -738,5 +738,4 @@ Test in isolation:
 
 The next implementation phase should target Phase 3, starting with:
 
-1. Task 3.9: Add agent trace output for frontend consumption
-2. Task 3.10: Add FastAPI endpoint for single-error interactive use
+1. Task 3.10: Add FastAPI endpoint for single-error interactive use
