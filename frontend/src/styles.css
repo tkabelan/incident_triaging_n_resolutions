@@ -209,6 +209,54 @@ pre {
   margin-top: 24px;
 }
 
+.friendly-steps {
+  display: grid;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.friendly-step-card {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 14px;
+  align-items: start;
+  padding: 16px 18px;
+  border: 1px solid rgba(16, 33, 27, 0.08);
+  border-radius: 18px;
+  background: rgba(250, 252, 248, 0.94);
+}
+
+.friendly-step-running {
+  border-color: rgba(31, 122, 88, 0.18);
+  background: rgba(244, 250, 245, 0.96);
+}
+
+.friendly-step-failed {
+  border-color: rgba(175, 57, 49, 0.18);
+  background: rgba(255, 244, 242, 0.95);
+}
+
+.friendly-step-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #edf7dc 0%, #f4f8ef 100%);
+  font-size: 1.45rem;
+}
+
+.friendly-step-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.friendly-step-card p {
+  margin: 6px 0 0;
+  color: #365246;
+}
+
 .score-card {
   padding: 18px;
   border: 1px solid rgba(16, 33, 27, 0.08);
@@ -483,6 +531,10 @@ pre {
   .kb-grid,
   .timeline-grid,
   .timeline-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .friendly-step-card {
     grid-template-columns: 1fr;
   }
 

@@ -60,3 +60,34 @@ export type ProcessErrorResponse = {
   kb_update_reference?: string | null;
   error?: StageError | null;
 };
+
+export type ProcessProgressEvent = {
+  type: "progress";
+  stage: string;
+  status: string;
+  title: string;
+  description: string;
+};
+
+export type ProcessResultEvent = {
+  type: "result";
+  payload: ProcessErrorResponse;
+};
+
+export type ProcessDoneEvent = {
+  type: "done";
+};
+
+export type ProcessStreamErrorEvent = {
+  type: "error";
+  payload: {
+    message: string;
+    error_type?: string;
+  };
+};
+
+export type ProcessStreamEvent =
+  | ProcessProgressEvent
+  | ProcessResultEvent
+  | ProcessDoneEvent
+  | ProcessStreamErrorEvent;

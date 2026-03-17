@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import json
+from queue import Queue
+from threading import Thread
+
 from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.config import get_settings
@@ -29,6 +34,10 @@ class SingleErrorResponse(BaseModel):
     error: dict | None = None
 
 
+def _sse_payload(event: dict) -> str:
+    return f"data: {json.dumps(event)}\n\n"
+
+
 @router.post("/errors/process", response_model=SingleErrorResponse)
 def process_single_error(request: SingleErrorRequest) -> SingleErrorResponse:
     workflow = ErrorProcessingWorkflow(get_settings())
@@ -46,3 +55,43 @@ def process_single_error(request: SingleErrorRequest) -> SingleErrorResponse:
         kb_update_reference=result.get("kb_update_reference"),
         error=result.get("error"),
     )
+
+
+@router.post("/errors/process/stream")
+def process_single_error_stream(request: SingleErrorRequest) -> StreamingResponse:
+    event_queue: Queue[dict | None] = Queue()
+
+    def publish(event: dict) -> None:
+        event_queue.put(event)
+
+    def worker() -> None:
+        workflow = ErrorProcessingWorkflow(get_settings())
+        try:
+            result = workflow.run_single_error(
+                request.error_text,
+                row_id=request.row_id,
+                source_file=request.source_file,
+                progress_callback=publish,
+            )
+            event_queue.put({"type": "result", "payload": result})
+        except Exception as exc:
+            event_queue.put(
+                {
+                    "type": "error",
+                    "payload": {"message": str(exc), "error_type": exc.__class__.__name__},
+                }
+            )
+        finally:
+            event_queue.put(None)
+
+    Thread(target=worker, daemon=True).start()
+
+    def stream():
+        while True:
+            event = event_queue.get()
+            if event is None:
+                yield _sse_payload({"type": "done"})
+                break
+            yield _sse_payload(event)
+
+    return StreamingResponse(stream(), media_type="text/event-stream")

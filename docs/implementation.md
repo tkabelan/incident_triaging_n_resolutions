@@ -153,6 +153,8 @@ The next scope is a simple local React frontend that uses the existing FastAPI e
 - Typed API client: [frontend/src/api/processError.ts](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/frontend/src/api/processError.ts)
 - Frontend response types: [frontend/src/types/agent.ts](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/frontend/src/types/agent.ts)
 - Frontend styles: [frontend/src/styles.css](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/frontend/src/styles.css)
+- Streaming progress endpoint: [app/api/routes/errors.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/api/routes/errors.py)
+- Workflow progress events: [app/workflows/error_processing.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/workflows/error_processing.py)
 
 ### MCP Retrieval
 
@@ -252,6 +254,7 @@ Expected result:
 - the frontend now shows a readable outcome summary and stage timeline
 - stage status, confidence, web evidence, and KB update information are visible to non-technical users
 - the local demo flow is complete from text input to structured readable result
+- the frontend now streams short user-friendly step updates while the backend is still processing
 
 ## Canonical References
 

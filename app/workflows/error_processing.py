@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from langgraph.graph import END, START, StateGraph
 
@@ -47,6 +47,7 @@ class ErrorProcessingWorkflow:
         self._retriever = retriever or KnowledgeBaseRetriever.from_settings(settings)
         self._classifier = classifier
         self._policy = WorkflowPolicy.from_settings(settings)
+        self._progress_callback: Callable[[dict[str, Any]], None] | None = None
         self._graph = self._build_graph()
 
     def run_first_three_errors(self) -> list[dict]:
@@ -67,6 +68,7 @@ class ErrorProcessingWorkflow:
         *,
         row_id: str = "manual-1",
         source_file: str = "manual_input",
+        progress_callback: Callable[[dict[str, Any]], None] | None = None,
     ) -> dict[str, Any]:
         logger.info("Starting end-to-end processing for a single manual error")
         raw_record = RawErrorRecord(
@@ -75,10 +77,20 @@ class ErrorProcessingWorkflow:
             error_message=error_text,
             source_file=source_file,
         )
-        return self._process_one_error(raw_record)
+        return self._process_one_error(raw_record, progress_callback=progress_callback)
 
-    def _process_one_error(self, raw_record: Any) -> dict[str, Any]:
+    def _process_one_error(
+        self,
+        raw_record: Any,
+        progress_callback: Callable[[dict[str, Any]], None] | None = None,
+    ) -> dict[str, Any]:
+        self._progress_callback = progress_callback
         try:
+            self._emit_progress(
+                title="📂 Parsing error",
+                description="The agent accepted the input and is preparing the workflow.",
+                stage="input",
+            )
             final_state = self._graph.invoke(new_graph_state(raw_record))
         except Exception as exc:
             logger.exception("Failed processing error row %s", raw_record.row_id)
@@ -86,6 +98,14 @@ class ErrorProcessingWorkflow:
             final_state["error"] = self._format_error(exc)
             final_state["status"] = "failed"
             final_state["steps"].append("failed")
+            self._emit_progress(
+                title="⚠️ Workflow failed",
+                description="The run stopped before a reliable answer was produced.",
+                stage="workflow",
+                status="failed",
+            )
+        finally:
+            self._progress_callback = None
 
         return graph_state_to_result(final_state)
 
@@ -180,6 +200,11 @@ class ErrorProcessingWorkflow:
 
     def _raw_ingestion_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
         updates = self._clone_state(state)
+        self._emit_progress(
+            title="📂 Capturing input",
+            description="The raw error is being stored for audit and replay.",
+            stage="raw_ingestion",
+        )
         updates["steps"].extend(["raw_ingestion_started", "raw_ingestion_completed"])
         raw_response = self._mcp_client.ingest_raw_error(state["raw_record"])
         updates["raw_storage_reference"] = raw_response.storage_reference
@@ -187,6 +212,11 @@ class ErrorProcessingWorkflow:
 
     def _normalization_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
         updates = self._clone_state(state)
+        self._emit_progress(
+            title="🧹 Normalizing error",
+            description="The agent is cleaning the message and extracting key fields.",
+            stage="normalization",
+        )
         updates["steps"].append("normalization_started")
         processed_record, processed_storage_reference = self._normalizer.normalize_from_storage(
             state["raw_storage_reference"]
@@ -198,6 +228,11 @@ class ErrorProcessingWorkflow:
 
     def _kb_retrieval_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
         updates = self._clone_state(state)
+        self._emit_progress(
+            title="🗂️ Checking the knowledge base",
+            description="The agent is looking for similar incidents and prior resolutions.",
+            stage="kb_retrieval",
+        )
         updates["steps"].append("kb_retrieval_started")
         retrieval = self._mcp_client.retrieve_kb(state["processed_error"])
         updates["evidence"] = retrieval.evidence
@@ -223,6 +258,11 @@ class ErrorProcessingWorkflow:
 
     def _direct_kb_resolution_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
         updates = self._clone_state(state)
+        self._emit_progress(
+            title="📚 Reusing known answer",
+            description="A strong KB match was found, so the agent can answer without new model calls.",
+            stage="direct_kb_resolution",
+        )
         classification = self._retriever.build_classification_from_match(
             state["processed_error"],
             state["direct_match"],
@@ -240,6 +280,11 @@ class ErrorProcessingWorkflow:
 
     def _primary_classification_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
         updates = self._clone_state(state)
+        self._emit_progress(
+            title="🧠 Calling classifier",
+            description="The primary model is classifying the error and drafting a resolution.",
+            stage="primary_classification",
+        )
         updates["steps"].append("primary_classification_started")
         updates["classification_attempts"] = state.get("classification_attempts", 0) + 1
         try:
@@ -251,6 +296,12 @@ class ErrorProcessingWorkflow:
                 self._latest_reflection_note(state),
             )
         except Exception as exc:
+            self._emit_progress(
+                title="🧠 Classifier failed",
+                description="The primary model could not complete this attempt.",
+                stage="primary_classification",
+                status="failed",
+            )
             updates["stage_details"]["primary_llm"]["status"] = "fail"
             updates["stage_details"]["primary_llm"]["error"] = self._format_error(exc)
             updates["error"] = self._format_error(exc)
@@ -269,6 +320,11 @@ class ErrorProcessingWorkflow:
 
     def _verification_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
         updates = self._clone_state(state)
+        self._emit_progress(
+            title="✅ Verifying answer",
+            description="A second model is checking whether the first answer is reliable.",
+            stage="verification",
+        )
         updates["steps"].append("verification_started")
         try:
             verification = self._mcp_client.verify_resolution(
@@ -297,6 +353,11 @@ class ErrorProcessingWorkflow:
 
     def _kb_update_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
         updates = self._clone_state(state)
+        self._emit_progress(
+            title="📚 Updating knowledge base",
+            description="The verified result is being saved for future reuse.",
+            stage="kb_update",
+        )
         updates["steps"].append("kb_update_started")
         updates["outcome_source"] = (
             "refined_after_web_search"
@@ -328,6 +389,11 @@ class ErrorProcessingWorkflow:
 
     def _web_search_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
         updates = self._clone_state(state)
+        self._emit_progress(
+            title="🔎 Searching the web",
+            description="The agent is gathering external evidence because internal confidence was not enough.",
+            stage="web_search",
+        )
         updates["steps"].append("web_search_started")
         query = self._build_web_search_query(
             state["processed_error"], state["classification_result"]
@@ -353,6 +419,11 @@ class ErrorProcessingWorkflow:
 
     def _refinement_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
         updates = self._clone_state(state)
+        self._emit_progress(
+            title="🛠️ Refining the answer",
+            description="The model is combining KB and web evidence into a stronger answer.",
+            stage="refinement",
+        )
         updates["steps"].append("refinement_started")
         updates["refinement_attempts"] = state.get("refinement_attempts", 0) + 1
         try:
@@ -410,6 +481,11 @@ class ErrorProcessingWorkflow:
 
     def _reflection_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
         updates = self._clone_state(state)
+        self._emit_progress(
+            title="🔁 Retrying carefully",
+            description="The agent is narrowing the next attempt after the previous step did not succeed.",
+            stage="reflection",
+        )
         context = state.get("reflection_context") or "unknown"
         note = self._build_reflection_note(state)
         updates["reflection_notes"].append(note)
@@ -425,6 +501,12 @@ class ErrorProcessingWorkflow:
 
     def _human_review_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
         updates = self._clone_state(state)
+        self._emit_progress(
+            title="🧑‍💻 Routing to human review",
+            description="The workflow stopped safely because it could not reach a reliable autonomous answer.",
+            stage="human_review",
+            status="complete",
+        )
         updates["status"] = "human_review_required"
         updates["human_review_reason"] = (
             state.get("decision_reason") or "Workflow escalated to human review."
@@ -588,3 +670,23 @@ class ErrorProcessingWorkflow:
             "evidence_kb_ids": ",".join(item.kb_id for item in evidence) or None,
             "has_direct_match": state.get("direct_match") is not None,
         }
+
+    def _emit_progress(
+        self,
+        *,
+        title: str,
+        description: str,
+        stage: str,
+        status: str = "running",
+    ) -> None:
+        if self._progress_callback is None:
+            return
+        self._progress_callback(
+            {
+                "type": "progress",
+                "stage": stage,
+                "status": status,
+                "title": title,
+                "description": description,
+            }
+        )

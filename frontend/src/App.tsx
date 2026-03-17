@@ -1,7 +1,13 @@
 import { FormEvent, useState } from "react";
 
-import { processError, ProcessErrorApiError } from "./api/processError";
-import type { ProcessErrorResponse, StageData, WebSearchItem } from "./types/agent";
+import { processErrorStream, ProcessErrorApiError } from "./api/processError";
+import type {
+  ProcessProgressEvent,
+  ProcessErrorResponse,
+  ProcessStreamEvent,
+  StageData,
+  WebSearchItem,
+} from "./types/agent";
 
 const DEFAULT_ERROR =
   "[CANNOT_OPEN_SOCKET] Can not open socket: [\"tried to connect to ('127.0.0.1', 37311), but an error occurred: [Errno 111] Connection refused\"]";
@@ -26,6 +32,12 @@ const STAGE_LABELS: Record<(typeof STAGE_ORDER)[number], string> = {
   refinement_llm: "Refinement LLM",
   reflection: "Reflection",
   human_review: "Human review",
+};
+
+type FriendlyStep = {
+  icon: string;
+  title: string;
+  description: string;
 };
 
 function toTitleCase(value: string) {
@@ -68,11 +80,88 @@ function getWebSearchItems(result: ProcessErrorResponse): WebSearchItem[] {
   return items as WebSearchItem[];
 }
 
+function buildFriendlySteps(result: ProcessErrorResponse): FriendlyStep[] {
+  const stages = result.agent_trace.stages;
+  const steps: FriendlyStep[] = [
+    {
+      icon: "📂",
+      title: "Parsing the error",
+      description: "The app cleaned the input and prepared it for retrieval and reasoning.",
+    },
+    {
+      icon: "🗂️",
+      title: stages.chroma_db?.direct_match ? "Found in the knowledge base" : "Checking the knowledge base",
+      description: stages.chroma_db?.direct_match
+        ? "A strong KB match was found, so the agent could reuse prior knowledge."
+        : "The agent looked for similar issues and grounded evidence in ChromaDB.",
+    },
+  ];
+
+  if (stages.primary_llm?.status === "pass") {
+    steps.push({
+      icon: "🧠",
+      title: "Calling the classifier",
+      description: "The primary model classified the error and proposed a resolution.",
+    });
+  } else if (stages.primary_llm?.status === "fail") {
+    steps.push({
+      icon: "🧠",
+      title: "Classifier could not complete",
+      description: "The primary model attempted classification but did not finish successfully.",
+    });
+  }
+
+  if (stages.verification_llm?.status === "pass") {
+    steps.push({
+      icon: "✅",
+      title: stages.verification_llm.passed ? "Verification passed" : "Verification raised doubt",
+      description: stages.verification_llm.passed
+        ? "A second model checked the answer and considered it reliable."
+        : "A second model reviewed the answer and requested more evidence.",
+    });
+  }
+
+  if (stages.web_search?.status === "pass") {
+    steps.push({
+      icon: "🔎",
+      title: "Searching the web",
+      description: "The agent pulled external evidence because the internal answer was not enough.",
+    });
+  }
+
+  if (stages.refinement_llm?.status === "pass") {
+    steps.push({
+      icon: "🛠️",
+      title: "Refining the answer",
+      description: "The model combined the new evidence with the earlier context to improve the result.",
+    });
+  }
+
+  if (result.agent_trace.kb_update_triggered) {
+    steps.push({
+      icon: "📚",
+      title: "Updating the knowledge base",
+      description: "The verified result was saved so similar errors can be answered faster next time.",
+    });
+  }
+
+  if (stages.human_review?.status === "pass") {
+    steps.push({
+      icon: "🧑‍💻",
+      title: "Routing to human review",
+      description: "The agent stopped safely because it could not reach a reliable autonomous answer.",
+    });
+  }
+
+  return steps;
+}
+
 function App() {
   const [errorText, setErrorText] = useState(DEFAULT_ERROR);
   const [result, setResult] = useState<ProcessErrorResponse | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [liveSteps, setLiveSteps] = useState<ProcessProgressEvent[]>([]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -85,10 +174,22 @@ function App() {
     setIsSubmitting(true);
     setRequestError(null);
     setResult(null);
+    setLiveSteps([]);
 
     try {
-      const response = await processError({ error_text: trimmed });
-      setResult(response);
+      await processErrorStream({ error_text: trimmed }, (event: ProcessStreamEvent) => {
+        if (event.type === "progress") {
+          setLiveSteps((current) => [...current, event]);
+          return;
+        }
+        if (event.type === "result") {
+          setResult(event.payload);
+          return;
+        }
+        if (event.type === "error") {
+          setRequestError(event.payload.message);
+        }
+      });
     } catch (error) {
       if (error instanceof ProcessErrorApiError) {
         setRequestError(`${error.message} (HTTP ${error.status})`);
@@ -138,6 +239,49 @@ function App() {
         </form>
       </section>
 
+      {isSubmitting ? (
+        <section className="panel">
+          <div className="timeline-header">
+            <div>
+              <p className="section-label">Live progress</p>
+              <h2>Processing right now</h2>
+            </div>
+            <p className="timeline-helper">
+              The backend is streaming these steps as the workflow runs.
+            </p>
+          </div>
+
+          <div className="friendly-steps">
+            {liveSteps.length > 0 ? (
+              liveSteps.map((step, index) => (
+                <article
+                  key={`${step.stage}-${index}`}
+                  className={`friendly-step-card friendly-step-${step.status}`}
+                >
+                  <div className="friendly-step-icon" aria-hidden="true">
+                    {step.title.split(" ")[0]}
+                  </div>
+                  <div>
+                    <h3>{step.title}</h3>
+                    <p>{step.description}</p>
+                  </div>
+                </article>
+              ))
+            ) : (
+              <article className="friendly-step-card">
+                <div className="friendly-step-icon" aria-hidden="true">
+                  ⏳
+                </div>
+                <div>
+                  <h3>Starting the workflow</h3>
+                  <p>The backend has accepted the request and is beginning the agent run.</p>
+                </div>
+              </article>
+            )}
+          </div>
+        </section>
+      ) : null}
+
       {requestError ? (
         <section className="panel status-panel error-panel">
           <h2>Request Failed</h2>
@@ -178,6 +322,32 @@ function App() {
             <div className="explanation-block">
               <p className="section-label">What happened</p>
               <p>{result.agent_trace.branch_explanation ?? "No explanation returned."}</p>
+            </div>
+          </section>
+
+          <section className="panel">
+            <div className="timeline-header">
+              <div>
+                <p className="section-label">Agent walkthrough</p>
+                <h2>Short reasoning steps</h2>
+              </div>
+              <p className="timeline-helper">
+                This is a simple explanation of what the agent did, without raw internal reasoning.
+              </p>
+            </div>
+
+            <div className="friendly-steps">
+              {buildFriendlySteps(result).map((step, index) => (
+                <article key={`${step.title}-${index}`} className="friendly-step-card">
+                  <div className="friendly-step-icon" aria-hidden="true">
+                    {step.icon}
+                  </div>
+                  <div>
+                    <h3>{step.title}</h3>
+                    <p>{step.description}</p>
+                  </div>
+                </article>
+              ))}
             </div>
           </section>
 

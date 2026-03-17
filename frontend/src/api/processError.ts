@@ -1,6 +1,11 @@
-import type { ProcessErrorRequest, ProcessErrorResponse } from "../types/agent";
+import type {
+  ProcessErrorRequest,
+  ProcessErrorResponse,
+  ProcessStreamEvent,
+} from "../types/agent";
 
 const PROCESS_ERROR_URL = "/api/v1/errors/process";
+const PROCESS_ERROR_STREAM_URL = "/api/v1/errors/process/stream";
 
 export class ProcessErrorApiError extends Error {
   readonly status: number;
@@ -34,4 +39,52 @@ export async function processError(
   }
 
   return body as ProcessErrorResponse;
+}
+
+export async function processErrorStream(
+  payload: ProcessErrorRequest,
+  onEvent: (event: ProcessStreamEvent) => void,
+): Promise<void> {
+  const response = await fetch(PROCESS_ERROR_STREAM_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const body = (await response.json()) as { detail?: string };
+    throw new ProcessErrorApiError(body.detail ?? "The backend request failed.", response.status);
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) {
+    throw new Error("The browser could not read the streaming response.");
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) {
+      break;
+    }
+
+    buffer += decoder.decode(value, { stream: true });
+    const chunks = buffer.split("\n\n");
+    buffer = chunks.pop() ?? "";
+
+    for (const chunk of chunks) {
+      const dataLine = chunk
+        .split("\n")
+        .find((line) => line.startsWith("data: "));
+      if (!dataLine) {
+        continue;
+      }
+      const payloadText = dataLine.slice(6);
+      onEvent(JSON.parse(payloadText) as ProcessStreamEvent);
+    }
+  }
 }
