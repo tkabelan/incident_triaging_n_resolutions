@@ -1,6 +1,6 @@
 {
   "row_id": "manual-1",
-  "error_prefix": "[CANNOT_OPEN_SOCKET]",
-  "error_message": "[CANNOT_OPEN_SOCKET] Connection refused",
+  "error_prefix": "java.util.concurrent.ExecutionException: org.apache.spark.SparkException: Job aborted due to stage failure: Task 357 in stage 115.0 failed 4 times, most recent failure: Lost task 357.3 in stage 115.0 (TID 7135) (100.64.114.169 executor 45): ExecutorLostFailure (executor 45 exited caused by one of the running tasks) Reason: Executor heartbeat timed out after 123759 ms",
+  "error_message": "java.util.concurrent.ExecutionException: org.apache.spark.SparkException: Job aborted due to stage failure: Task 357 in stage 115.0 failed 4 times, most recent failure: Lost task 357.3 in stage 115.0 (TID 7135) (100.64.114.169 executor 45): ExecutorLostFailure (executor 45 exited caused by one of the running tasks) Reason: Executor heartbeat timed out after 123759 ms",
   "source_file": "manual_input"
 }

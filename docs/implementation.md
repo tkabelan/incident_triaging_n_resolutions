@@ -4,20 +4,17 @@
 
 ## Current Scope
 
-The current prototype has completed the workflow-driven Phase 2 implementation.
+The backend agentic phase is complete.
 
-The next scope is to turn it into a fully agentic app:
+The next scope is a simple local React frontend that uses the existing FastAPI endpoint:
 
-1. Replace the custom workflow with a LangGraph graph
-2. Define a first-class graph state model
-3. Route KB retrieval through MCP as a tool
-4. Add a planner/decision node
-5. Separate policy from reasoning
-6. Add retry and reflection behavior
-7. Add a human-review exit path
-8. Expand KB memory signals
-9. Add frontend-friendly agent trace output
-10. Add a single-error FastAPI endpoint for interactive use
+1. Create the frontend app scaffold
+2. Add a typed API client for the single-error endpoint
+3. Build the input and submit flow
+4. Build the readable outcome summary
+5. Build the agent steps timeline
+6. Build score, evidence, and KB panels
+7. Add simple UX polish for local demo use
 
 ## Status
 
@@ -55,6 +52,13 @@ The next scope is to turn it into a fully agentic app:
 - [x] Task 3.8: Expand KB memory and learning signals
 - [x] Task 3.9: Add frontend-friendly agent trace output
 - [x] Task 3.10: Add single-error FastAPI endpoint
+- [x] Task 4.1: Create the frontend app scaffold
+- [x] Task 4.2: Add a typed API client for the single-error endpoint
+- [x] Task 4.3: Build the input and submit flow
+- [x] Task 4.4: Build the readable outcome summary
+- [x] Task 4.5: Build the agent steps timeline
+- [x] Task 4.6: Build score, evidence, and KB panels
+- [x] Task 4.7: Add simple UX polish for local demo use
 
 ## Implemented Files
 
@@ -137,6 +141,18 @@ The next scope is to turn it into a fully agentic app:
 - FastAPI single-error route: [app/api/routes/errors.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/api/routes/errors.py)
 - FastAPI app registration: [app/api/app.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/api/app.py)
 - Local frontend plan: [docs/frontend-plan.md](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/docs/frontend-plan.md)
+
+### Frontend MVP
+
+- Frontend package manifest: [frontend/package.json](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/frontend/package.json)
+- Vite config and API proxy: [frontend/vite.config.ts](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/frontend/vite.config.ts)
+- Frontend env template: [frontend/.env.example](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/frontend/.env.example)
+- Frontend entry HTML: [frontend/index.html](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/frontend/index.html)
+- React entrypoint: [frontend/src/main.tsx](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/frontend/src/main.tsx)
+- App shell, summary, and stage timeline: [frontend/src/App.tsx](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/frontend/src/App.tsx)
+- Typed API client: [frontend/src/api/processError.ts](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/frontend/src/api/processError.ts)
+- Frontend response types: [frontend/src/types/agent.ts](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/frontend/src/types/agent.ts)
+- Frontend styles: [frontend/src/styles.css](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/frontend/src/styles.css)
 
 ### MCP Retrieval
 
@@ -221,23 +237,21 @@ Current implemented workflow shape:
 
 ## Next Task
 
-The next implementation target is to make the app fully agentic.
+The next implementation target is the next frontend rendering slice.
 
 Immediate next tasks:
 
-- Build the local React frontend using [docs/frontend-plan.md](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/docs/frontend-plan.md)
+- Run the frontend locally against the FastAPI backend
+- Refine any UI issues found in local testing
+- Replace remaining placeholder text where real agent data is now available
 
 Expected result:
 
-- orchestration now runs through LangGraph with explicit node transitions
-- graph state now has a dedicated model instead of loose workflow-local dict handling
-- KB retrieval now runs through MCP like the other tool-backed stages
-- next-step decisions now pass through an explicit planner node
-- thresholds and operational rules now live in a dedicated workflow policy layer
-- the graph now supports reflection-based retries and a safe human-review terminal state
-- verified outcomes now write richer memory signals back into the KB
-- the workflow now returns a stable agent trace contract for frontend use
-- the single-error flow is now exposed through FastAPI for frontend integration
+- a local React app can submit one error to the backend
+- the response starts in a simple page shell with loading and error handling
+- the frontend now shows a readable outcome summary and stage timeline
+- stage status, confidence, web evidence, and KB update information are visible to non-technical users
+- the local demo flow is complete from text input to structured readable result
 
 ## Canonical References
 

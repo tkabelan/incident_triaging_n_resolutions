@@ -24,3 +24,7 @@ data/processed/
 # Test and local tool outputs
 .coverage
 htmlcov/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/

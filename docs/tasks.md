@@ -736,6 +736,121 @@ Test in isolation:
 
 ## Next Focus
 
-The next implementation phase should target Phase 3, starting with:
+The backend agentic phase is now in place. The next implementation phase should be a simple frontend MVP.
 
-1. Task 3.10: Add FastAPI endpoint for single-error interactive use
+## Phase 4: Frontend MVP
+
+Goal:
+
+Build a simple local React frontend that lets a user paste one error, run the existing backend agent, and understand the result without reading raw JSON.
+
+### Task 4.1: Create the frontend app scaffold
+
+Scope:
+
+- Create a React app under `frontend/`.
+- Use a local dev setup that runs beside the FastAPI backend.
+
+Acceptance criteria:
+
+- The frontend starts locally.
+- A basic page shell renders.
+
+Test in isolation:
+
+- Start the frontend dev server and load the home page.
+
+### Task 4.2: Add a small typed API client
+
+Scope:
+
+- Add a frontend API module for `POST /api/v1/errors/process`.
+- Keep request and response handling isolated from components.
+
+Acceptance criteria:
+
+- The frontend can call the backend endpoint successfully.
+- API errors are surfaced clearly.
+
+Test in isolation:
+
+- Submit a sample error and verify the parsed response shape.
+
+### Task 4.3: Build the input and submit flow
+
+Scope:
+
+- Add a large error text area.
+- Add an `Analyze Error` button and loading state.
+
+Acceptance criteria:
+
+- A user can submit one error from the UI.
+- Duplicate submits are prevented while the request is in flight.
+
+Test in isolation:
+
+- Submit a sample error and verify loading, success, and failure states.
+
+### Task 4.4: Build the readable outcome summary
+
+Scope:
+
+- Render final status, classification, resolution, outcome source, and branch explanation.
+- Keep the layout readable for non-technical users.
+
+Acceptance criteria:
+
+- A user can understand the final result without opening raw JSON.
+
+Test in isolation:
+
+- Render a mocked successful response and verify the visible summary fields.
+
+### Task 4.5: Build the agent steps timeline
+
+Scope:
+
+- Render the main agent stages in order.
+- Show pass, fail, skipped, or not-run clearly.
+
+Acceptance criteria:
+
+- A user can tell which stages ran and why.
+- Confidence and reason fields are shown when present.
+
+Test in isolation:
+
+- Render mocked traces for direct-KB, verified, and human-review paths.
+
+### Task 4.6: Build score, evidence, and KB panels
+
+Scope:
+
+- Render classification and verification confidence.
+- Render web-search results with title, score, snippet, and link.
+- Render KB update status and reference.
+
+Acceptance criteria:
+
+- Scores and supporting evidence are visible in a readable format.
+
+Test in isolation:
+
+- Render mocked traces with web results and KB update details.
+
+### Task 4.7: Add simple UX polish for local demo use
+
+Scope:
+
+- Add lightweight styling, spacing, and status colors.
+- Add empty, loading, and API error states.
+
+Acceptance criteria:
+
+- The page is readable on desktop and mobile.
+- The frontend feels coherent enough for local demo use.
+
+Test in isolation:
+
+- Manually verify success, loading, error, and human-review states.
