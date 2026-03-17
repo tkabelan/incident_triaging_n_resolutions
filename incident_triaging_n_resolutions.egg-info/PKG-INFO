@@ -12,6 +12,7 @@ Requires-Dist: langchain-openai<0.3,>=0.2
 Requires-Dist: langchain-chroma<0.2,>=0.1
 Requires-Dist: langgraph<0.3,>=0.2
 Requires-Dist: chromadb<0.6,>=0.5
+Requires-Dist: onnxruntime<1.24
 Requires-Dist: sqlalchemy<3.0,>=2.0
 Requires-Dist: tavily-python<0.6,>=0.5
 Provides-Extra: dev
