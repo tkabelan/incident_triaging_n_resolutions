@@ -51,10 +51,12 @@ class PrimaryClassificationService:
         self,
         processed_error: ProcessedErrorRecord,
         evidence: list[GroundingEvidence],
+        reflection_note: str | None = None,
     ) -> ClassificationResolutionResult:
         draft = self._invoke(
             processed_error=processed_error,
             evidence_text=_format_evidence(evidence),
+            reflection_note=reflection_note,
         )
         logger.info(
             "Produced classification for row %s with category %s",
@@ -74,10 +76,12 @@ class PrimaryClassificationService:
         processed_error: ProcessedErrorRecord,
         evidence: list[GroundingEvidence],
         web_results: list[WebSearchResult],
+        reflection_note: str | None = None,
     ) -> ClassificationResolutionResult:
         draft = self._invoke(
             processed_error=processed_error,
             evidence_text=_format_evidence(evidence) + "\n\nExternal web evidence:\n" + _format_web_results(web_results),
+            reflection_note=reflection_note,
         )
         logger.info(
             "Produced refined classification for row %s with category %s",
@@ -97,7 +101,10 @@ class PrimaryClassificationService:
         *,
         processed_error: ProcessedErrorRecord,
         evidence_text: str,
+        reflection_note: str | None = None,
     ) -> ClassificationResolutionDraft:
+        if reflection_note:
+            evidence_text = evidence_text + "\n\nReflection guidance:\n" + reflection_note
         return self._structured_llm.invoke(
             {
                 "processed_error": processed_error.model_dump_json(indent=2),

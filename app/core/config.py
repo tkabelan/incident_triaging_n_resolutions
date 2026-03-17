@@ -90,6 +90,20 @@ class SearchConfig(BaseModel):
     search_depth: str = "basic"
 
 
+class WorkflowPolicyConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    allow_direct_kb_resolution: bool = True
+    verification_confidence_threshold: float = 0.6
+    refinement_confidence_threshold: float = 0.7
+    use_web_search_on_low_confidence: bool = True
+    update_kb_on_verified: bool = True
+    max_classification_retries: int = 1
+    max_refinement_retries: int = 1
+    route_failed_verification_to_human_review: bool = True
+    route_failed_refinement_to_human_review: bool = True
+
+
 class Settings(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -102,6 +116,7 @@ class Settings(BaseModel):
     knowledge_base: KnowledgeBaseConfig
     models: ModelsConfig
     search: SearchConfig
+    workflow: WorkflowPolicyConfig
 
 
 def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:

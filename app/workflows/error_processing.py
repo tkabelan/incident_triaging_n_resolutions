@@ -4,6 +4,8 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from langgraph.graph import END, START, StateGraph
+
 from app.agents.classification_service import PrimaryClassificationService
 from app.core.config import Settings
 from app.ingestion.csv_ingestion import CsvErrorIngestionService
@@ -13,6 +15,13 @@ from app.normalization.error_normalizer import ErrorNormalizationService
 from app.retrieval.kb_retriever import KnowledgeBaseRetriever
 from app.schemas.error_records import RawErrorRecord
 from app.storage.processed_error_storage import ProcessedErrorStorageService
+from app.workflows.policy import WorkflowPolicy
+from app.workflows.state import (
+    AgentWorkflowState,
+    clone_graph_state,
+    graph_state_to_result,
+    new_graph_state,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -37,7 +46,9 @@ class ErrorProcessingWorkflow:
             ProcessedErrorStorageService(settings.storage.processed_data_dir)
         )
         self._retriever = retriever or KnowledgeBaseRetriever.from_settings(settings)
-        self._classifier = classifier or PrimaryClassificationService.from_settings(settings)
+        self._classifier = classifier
+        self._policy = WorkflowPolicy.from_settings(settings)
+        self._graph = self._build_graph()
 
     def run_first_three_errors(self) -> list[dict]:
         csv_path = Path(self._settings.ingestion.error_data_dir) / self._settings.ingestion.default_csv_file
@@ -65,174 +76,16 @@ class ErrorProcessingWorkflow:
         return self._process_one_error(raw_record)
 
     def _process_one_error(self, raw_record: Any) -> dict[str, Any]:
-        result: dict[str, Any] = {
-            "row_id": raw_record.row_id,
-            "status": "failed",
-            "steps": [],
-            "stage_details": {
-                "chroma_db": {"status": "not_run", "confidence": None, "error": None},
-                "primary_llm": {"status": "not_run", "confidence": None, "error": None},
-                "verification_llm": {"status": "not_run", "confidence": None, "error": None},
-                "web_search": {"status": "not_run", "confidence": None, "error": None},
-                "refinement_llm": {"status": "not_run", "confidence": None, "error": None},
-            },
-            "kb_match_found": False,
-            "kb_direct_match": False,
-            "evidence_count": 0,
-            "raw_storage_reference": None,
-            "processed_storage_reference": None,
-            "processed_error": None,
-            "classification": None,
-            "verification": None,
-            "web_search_results": [],
-            "kb_update_reference": None,
-            "error": None,
-        }
         try:
-            result["steps"].append("raw_ingestion_started")
-            raw_response = self._mcp_client.ingest_raw_error(raw_record)
-            result["raw_storage_reference"] = raw_response.storage_reference
-            result["steps"].append("raw_ingestion_completed")
-
-            result["steps"].append("normalization_started")
-            processed_record, processed_storage_reference = self._normalizer.normalize_from_storage(
-                raw_response.storage_reference
-            )
-            result["processed_storage_reference"] = processed_storage_reference
-            result["processed_error"] = processed_record.model_dump()
-            result["steps"].append("normalization_completed")
-
-            # Agentic decision point 1: prefer a strong prior KB match over new model calls.
-            result["steps"].append("kb_retrieval_started")
-            evidence = self._retriever.retrieve(processed_record)
-            result["steps"].append("kb_retrieval_completed")
-            result["evidence_count"] = len(evidence)
-            result["kb_match_found"] = bool(evidence)
-            result["stage_details"]["chroma_db"]["status"] = "pass" if evidence else "fail"
-            direct_match = self._retriever.get_direct_match(evidence)
-            if direct_match is not None:
-                result["kb_direct_match"] = True
-                result["stage_details"]["chroma_db"]["confidence"] = direct_match.score
-                classification = self._retriever.build_classification_from_match(
-                    processed_record,
-                    direct_match,
-                    evidence,
-                )
-                result["classification"] = classification.model_dump()
-                result["status"] = "resolved_from_kb"
-                result["steps"].append("resolved_from_kb")
-                result["stage_details"]["primary_llm"]["status"] = "skipped"
-                result["stage_details"]["verification_llm"]["status"] = "skipped"
-                result["stage_details"]["web_search"]["status"] = "skipped"
-                result["stage_details"]["refinement_llm"]["status"] = "skipped"
-                return result
-
-            # Agentic decision point 2: use the primary LLM only when retrieval is not strong enough.
-            result["steps"].append("primary_classification_started")
-            try:
-                classification = self._classifier.classify_and_resolve(processed_record, evidence)
-            except Exception as exc:
-                result["stage_details"]["primary_llm"]["status"] = "fail"
-                result["stage_details"]["primary_llm"]["error"] = self._format_error(exc)
-                raise
-            result["classification"] = classification.model_dump()
-            result["steps"].append("primary_classification_completed")
-            result["stage_details"]["primary_llm"]["status"] = "pass"
-            result["stage_details"]["primary_llm"]["confidence"] = classification.confidence
-
-            # Agentic decision point 3: verify the proposed answer before treating it as reliable.
-            result["steps"].append("verification_started")
-            try:
-                verification = self._mcp_client.verify_resolution(
-                    processed_record,
-                    classification,
-                    evidence,
-                )
-            except Exception as exc:
-                result["stage_details"]["verification_llm"]["status"] = "fail"
-                result["stage_details"]["verification_llm"]["error"] = self._format_error(exc)
-                raise
-            result["verification"] = verification.model_dump()
-            result["steps"].append("verification_completed")
-            result["stage_details"]["verification_llm"]["status"] = "pass" if verification.passed else "fail"
-            result["stage_details"]["verification_llm"]["confidence"] = verification.confidence
-
-            if verification.passed:
-                # Agentic decision point 4: successful outcomes are learned back into the KB.
-                result["steps"].append("kb_update_started")
-                result["kb_update_reference"] = self._retriever.upsert_verified_resolution(
-                    processed_record,
-                    classification,
-                )
-                result["steps"].append("kb_update_completed")
-                result["status"] = "success"
-                result["stage_details"]["web_search"]["status"] = "skipped"
-                result["stage_details"]["refinement_llm"]["status"] = "skipped"
-            elif verification.needs_web_search and self._settings.search.enabled:
-                # Agentic decision point 5: gather external evidence only when internal evidence is insufficient.
-                result["steps"].append("web_search_started")
-                query = self._build_web_search_query(processed_record, classification)
-                try:
-                    web_results = self._mcp_client.web_search(query)
-                except Exception as exc:
-                    result["stage_details"]["web_search"]["status"] = "fail"
-                    result["stage_details"]["web_search"]["error"] = self._format_error(exc)
-                    raise
-                result["web_search_results"] = [item.model_dump() for item in web_results]
-                result["steps"].append("web_search_completed")
-                result["stage_details"]["web_search"]["status"] = "pass" if web_results else "fail"
-                # Agentic decision point 6: refine the answer using both KB and web evidence.
-                result["steps"].append("refinement_started")
-                try:
-                    refined_classification = self._classifier.refine_with_web_search(
-                        processed_record,
-                        evidence,
-                        web_results,
-                    )
-                except Exception as exc:
-                    result["stage_details"]["refinement_llm"]["status"] = "fail"
-                    result["stage_details"]["refinement_llm"]["error"] = self._format_error(exc)
-                    raise
-                result["classification"] = refined_classification.model_dump()
-                result["stage_details"]["refinement_llm"]["status"] = "pass"
-                result["stage_details"]["refinement_llm"]["confidence"] = refined_classification.confidence
-                result["steps"].append("refinement_completed")
-
-                result["steps"].append("refinement_verification_started")
-                try:
-                    refined_verification = self._mcp_client.verify_resolution(
-                        processed_record,
-                        refined_classification,
-                        evidence,
-                    )
-                except Exception as exc:
-                    result["stage_details"]["verification_llm"]["error"] = self._format_error(exc)
-                    raise
-                result["verification"] = refined_verification.model_dump()
-                result["steps"].append("refinement_verification_completed")
-                result["stage_details"]["verification_llm"]["status"] = "pass" if refined_verification.passed else "fail"
-                result["stage_details"]["verification_llm"]["confidence"] = refined_verification.confidence
-
-                if refined_verification.passed:
-                    result["steps"].append("kb_update_started")
-                    result["kb_update_reference"] = self._retriever.upsert_verified_resolution(
-                        processed_record,
-                        refined_classification,
-                    )
-                    result["steps"].append("kb_update_completed")
-                    result["status"] = "success_after_refinement"
-                else:
-                    result["status"] = "refinement_failed"
-            else:
-                result["stage_details"]["web_search"]["status"] = "skipped"
-                result["stage_details"]["refinement_llm"]["status"] = "skipped"
-                result["status"] = "verification_failed"
+            final_state = self._graph.invoke(new_graph_state(raw_record))
         except Exception as exc:
             logger.exception("Failed processing error row %s", raw_record.row_id)
-            result["error"] = self._format_error(exc)
-            result["steps"].append("failed")
+            final_state = new_graph_state(raw_record)
+            final_state["error"] = self._format_error(exc)
+            final_state["status"] = "failed"
+            final_state["steps"].append("failed")
 
-        return result
+        return graph_state_to_result(final_state)
 
     def _build_web_search_query(
         self,
@@ -269,3 +122,450 @@ class ErrorProcessingWorkflow:
             return first_line
         first_token = first_line.split()[0] if first_line.split() else "ManualError"
         return first_token
+
+    def _build_graph(self):
+        graph = StateGraph(AgentWorkflowState)
+        graph.add_node("raw_ingestion", self._raw_ingestion_node)
+        graph.add_node("normalization", self._normalization_node)
+        graph.add_node("kb_retrieval", self._kb_retrieval_node)
+        graph.add_node("planner", self._planner_node)
+        graph.add_node("direct_kb_resolution", self._direct_kb_resolution_node)
+        graph.add_node("primary_classification", self._primary_classification_node)
+        graph.add_node("verification", self._verification_node)
+        graph.add_node("kb_update", self._kb_update_node)
+        graph.add_node("reflection", self._reflection_node)
+        graph.add_node("human_review", self._human_review_node)
+        graph.add_node("verification_failed", self._verification_failed_node)
+        graph.add_node("web_search", self._web_search_node)
+        graph.add_node("refinement", self._refinement_node)
+        graph.add_node("refinement_verification", self._refinement_verification_node)
+        graph.add_node("refinement_failed", self._refinement_failed_node)
+
+        graph.add_edge(START, "raw_ingestion")
+        graph.add_edge("raw_ingestion", "normalization")
+        graph.add_edge("normalization", "kb_retrieval")
+        graph.add_edge("kb_retrieval", "planner")
+        graph.add_conditional_edges(
+            "planner",
+            self._route_after_planner,
+            {
+                "direct_kb_resolution": "direct_kb_resolution",
+                "primary_classification": "primary_classification",
+                "verification": "verification",
+                "kb_update": "kb_update",
+                "web_search": "web_search",
+                "refinement": "refinement",
+                "refinement_verification": "refinement_verification",
+                "reflection": "reflection",
+                "human_review": "human_review",
+                "verification_failed": "verification_failed",
+                "refinement_failed": "refinement_failed",
+                "end": END,
+            },
+        )
+        graph.add_edge("direct_kb_resolution", END)
+        graph.add_edge("primary_classification", "planner")
+        graph.add_edge("verification", "planner")
+        graph.add_edge("reflection", "planner")
+        graph.add_edge("human_review", END)
+        graph.add_edge("verification_failed", END)
+        graph.add_edge("web_search", "planner")
+        graph.add_edge("refinement", "planner")
+        graph.add_edge("refinement_verification", "planner")
+        graph.add_edge("refinement_failed", END)
+        graph.add_edge("kb_update", END)
+        return graph.compile()
+
+    def _raw_ingestion_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
+        updates = self._clone_state(state)
+        updates["steps"].extend(["raw_ingestion_started", "raw_ingestion_completed"])
+        raw_response = self._mcp_client.ingest_raw_error(state["raw_record"])
+        updates["raw_storage_reference"] = raw_response.storage_reference
+        return updates
+
+    def _normalization_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
+        updates = self._clone_state(state)
+        updates["steps"].append("normalization_started")
+        processed_record, processed_storage_reference = self._normalizer.normalize_from_storage(
+            state["raw_storage_reference"]
+        )
+        updates["processed_error"] = processed_record
+        updates["processed_storage_reference"] = processed_storage_reference
+        updates["steps"].append("normalization_completed")
+        return updates
+
+    def _kb_retrieval_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
+        updates = self._clone_state(state)
+        updates["steps"].append("kb_retrieval_started")
+        retrieval = self._mcp_client.retrieve_kb(state["processed_error"])
+        updates["evidence"] = retrieval.evidence
+        updates["direct_match"] = retrieval.direct_match
+        updates["planner_context"] = "after_kb_retrieval"
+        updates["steps"].append("kb_retrieval_completed")
+        updates["stage_details"]["chroma_db"]["status"] = "pass" if retrieval.evidence else "fail"
+        updates["stage_details"]["chroma_db"]["confidence"] = (
+            updates["direct_match"].score if updates["direct_match"] is not None else None
+        )
+        return updates
+
+    def _planner_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
+        updates = self._clone_state(state)
+        context = updates.get("planner_context")
+        next_action, reason = self._decide_next_action(updates)
+        updates["next_action"] = next_action
+        updates["decision_reason"] = reason
+        updates["steps"].append(f"planner_{context or 'unknown'}")
+        updates["stage_details"]["planner"]["status"] = "pass"
+        updates["stage_details"]["planner"]["reasoning"] = reason
+        return updates
+
+    def _direct_kb_resolution_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
+        updates = self._clone_state(state)
+        classification = self._retriever.build_classification_from_match(
+            state["processed_error"],
+            state["direct_match"],
+            state["evidence"],
+        )
+        updates["classification_result"] = classification
+        updates["status"] = "resolved_from_kb"
+        updates["outcome_source"] = "kb_direct"
+        updates["steps"].append("resolved_from_kb")
+        updates["stage_details"]["primary_llm"]["status"] = "skipped"
+        updates["stage_details"]["verification_llm"]["status"] = "skipped"
+        updates["stage_details"]["web_search"]["status"] = "skipped"
+        updates["stage_details"]["refinement_llm"]["status"] = "skipped"
+        return updates
+
+    def _primary_classification_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
+        updates = self._clone_state(state)
+        updates["steps"].append("primary_classification_started")
+        updates["classification_attempts"] = state.get("classification_attempts", 0) + 1
+        try:
+            classifier = self._get_classifier()
+            classification = self._classify_with_optional_reflection(
+                classifier,
+                state["processed_error"],
+                state["evidence"],
+                self._latest_reflection_note(state),
+            )
+        except Exception as exc:
+            updates["stage_details"]["primary_llm"]["status"] = "fail"
+            updates["stage_details"]["primary_llm"]["error"] = self._format_error(exc)
+            updates["error"] = self._format_error(exc)
+            updates["planner_context"] = "after_primary_classification_failure"
+            updates["reflection_context"] = "primary_classification"
+            updates["steps"].append("primary_classification_failed")
+            return updates
+        updates["classification_result"] = classification
+        updates["stage_details"]["primary_llm"]["status"] = "pass"
+        updates["stage_details"]["primary_llm"]["confidence"] = classification.confidence
+        updates["stage_details"]["primary_llm"]["error"] = None
+        updates["error"] = None
+        updates["planner_context"] = "after_primary_classification"
+        updates["steps"].append("primary_classification_completed")
+        return updates
+
+    def _verification_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
+        updates = self._clone_state(state)
+        updates["steps"].append("verification_started")
+        try:
+            verification = self._mcp_client.verify_resolution(
+                state["processed_error"],
+                state["classification_result"],
+                state["evidence"],
+            )
+        except Exception as exc:
+            updates["stage_details"]["verification_llm"]["status"] = "fail"
+            updates["stage_details"]["verification_llm"]["error"] = self._format_error(exc)
+            updates["error"] = self._format_error(exc)
+            updates["status"] = "failed"
+            updates["steps"].append("failed")
+            return updates
+        updates["verification_result"] = verification
+        updates["stage_details"]["verification_llm"]["status"] = "pass" if verification.passed else "fail"
+        updates["stage_details"]["verification_llm"]["confidence"] = verification.confidence
+        if verification.passed:
+            updates["stage_details"]["verification_llm"]["error"] = None
+            updates["error"] = None
+        updates["planner_context"] = "after_verification"
+        updates["steps"].append("verification_completed")
+        return updates
+
+    def _kb_update_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
+        updates = self._clone_state(state)
+        updates["steps"].append("kb_update_started")
+        updates["outcome_source"] = (
+            "refined_after_web_search" if "refinement_completed" in updates["steps"] else "llm_verified"
+        )
+        updates["memory_signals"] = self._build_memory_signals(updates)
+        updates["kb_update_reference"] = self._retriever.upsert_verified_resolution(
+            state["processed_error"],
+            state["classification_result"],
+            updates["memory_signals"],
+        )
+        updates["steps"].append("kb_update_completed")
+        if "web_search_completed" not in updates["steps"]:
+            updates["stage_details"]["web_search"]["status"] = "skipped"
+        if "refinement_completed" not in updates["steps"]:
+            updates["stage_details"]["refinement_llm"]["status"] = "skipped"
+        updates["status"] = "success_after_refinement" if "refinement_completed" in updates["steps"] else "success"
+        return updates
+
+    def _verification_failed_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
+        updates = self._clone_state(state)
+        updates["stage_details"]["web_search"]["status"] = "skipped"
+        updates["stage_details"]["refinement_llm"]["status"] = "skipped"
+        updates["status"] = "verification_failed"
+        return updates
+
+    def _web_search_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
+        updates = self._clone_state(state)
+        updates["steps"].append("web_search_started")
+        query = self._build_web_search_query(state["processed_error"], state["classification_result"])
+        updates["search_query"] = query
+        try:
+            web_results = self._mcp_client.web_search(query)
+        except Exception as exc:
+            updates["stage_details"]["web_search"]["status"] = "fail"
+            updates["stage_details"]["web_search"]["error"] = self._format_error(exc)
+            updates["error"] = self._format_error(exc)
+            updates["status"] = "failed"
+            updates["steps"].append("failed")
+            return updates
+        updates["web_search_results"] = web_results
+        updates["stage_details"]["web_search"]["status"] = "pass" if web_results else "fail"
+        if web_results:
+            updates["stage_details"]["web_search"]["error"] = None
+            updates["error"] = None
+        updates["planner_context"] = "after_web_search"
+        updates["steps"].append("web_search_completed")
+        return updates
+
+    def _refinement_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
+        updates = self._clone_state(state)
+        updates["steps"].append("refinement_started")
+        updates["refinement_attempts"] = state.get("refinement_attempts", 0) + 1
+        try:
+            classifier = self._get_classifier()
+            refined_classification = self._refine_with_optional_reflection(
+                classifier,
+                state["processed_error"],
+                state["evidence"],
+                state["web_search_results"],
+                self._latest_reflection_note(state),
+            )
+        except Exception as exc:
+            updates["stage_details"]["refinement_llm"]["status"] = "fail"
+            updates["stage_details"]["refinement_llm"]["error"] = self._format_error(exc)
+            updates["error"] = self._format_error(exc)
+            updates["planner_context"] = "after_refinement_failure"
+            updates["reflection_context"] = "refinement"
+            updates["steps"].append("refinement_failed")
+            return updates
+        updates["classification_result"] = refined_classification
+        updates["stage_details"]["refinement_llm"]["status"] = "pass"
+        updates["stage_details"]["refinement_llm"]["confidence"] = refined_classification.confidence
+        updates["stage_details"]["refinement_llm"]["error"] = None
+        updates["error"] = None
+        updates["planner_context"] = "after_refinement"
+        updates["steps"].append("refinement_completed")
+        return updates
+
+    def _refinement_verification_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
+        updates = self._clone_state(state)
+        updates["steps"].append("refinement_verification_started")
+        try:
+            refined_verification = self._mcp_client.verify_resolution(
+                state["processed_error"],
+                state["classification_result"],
+                state["evidence"],
+            )
+        except Exception as exc:
+            updates["stage_details"]["verification_llm"]["error"] = self._format_error(exc)
+            updates["error"] = self._format_error(exc)
+            updates["status"] = "failed"
+            updates["steps"].append("failed")
+            return updates
+        updates["verification_result"] = refined_verification
+        updates["stage_details"]["verification_llm"]["status"] = "pass" if refined_verification.passed else "fail"
+        updates["stage_details"]["verification_llm"]["confidence"] = refined_verification.confidence
+        if refined_verification.passed:
+            updates["stage_details"]["verification_llm"]["error"] = None
+            updates["error"] = None
+        updates["planner_context"] = "after_refinement_verification"
+        updates["steps"].append("refinement_verification_completed")
+        return updates
+
+    def _reflection_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
+        updates = self._clone_state(state)
+        context = state.get("reflection_context") or "unknown"
+        note = self._build_reflection_note(state)
+        updates["reflection_notes"].append(note)
+        updates["steps"].append(f"reflection_{context}")
+        updates["stage_details"]["reflection"]["status"] = "pass"
+        updates["stage_details"]["reflection"]["reasoning"] = note
+        updates["planner_context"] = (
+            "after_primary_classification_reflection"
+            if context == "primary_classification"
+            else "after_refinement_reflection"
+        )
+        return updates
+
+    def _human_review_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
+        updates = self._clone_state(state)
+        updates["status"] = "human_review_required"
+        updates["human_review_reason"] = state.get("decision_reason") or "Workflow escalated to human review."
+        updates["steps"].append("human_review_required")
+        updates["stage_details"]["human_review"]["status"] = "pass"
+        updates["stage_details"]["human_review"]["reasoning"] = updates["human_review_reason"]
+        return updates
+
+    def _refinement_failed_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
+        updates = self._clone_state(state)
+        updates["status"] = "refinement_failed"
+        return updates
+
+    def _route_after_planner(self, state: AgentWorkflowState) -> str:
+        if state.get("status") == "failed":
+            return "end"
+        return state.get("next_action", "end")
+
+    def _decide_next_action(self, state: AgentWorkflowState) -> tuple[str, str]:
+        if state.get("status") == "failed":
+            return "end", "A prior node failed, so the graph will stop."
+
+        context = state.get("planner_context")
+        if context == "after_kb_retrieval":
+            decision = self._policy.decide_after_kb_retrieval(state.get("direct_match"))
+            return decision.action, decision.reason
+
+        if context == "after_primary_classification":
+            decision = self._policy.decide_after_primary_classification()
+            return decision.action, decision.reason
+
+        if context == "after_primary_classification_failure":
+            decision = self._policy.decide_after_primary_classification_failure(
+                state.get("classification_attempts", 0)
+            )
+            return decision.action, decision.reason
+
+        if context == "after_primary_classification_reflection":
+            return "primary_classification", "Reflection completed, so the primary classifier will retry."
+
+        if context == "after_verification":
+            decision = self._policy.decide_after_verification(
+                state.get("verification_result"),
+                search_enabled=self._is_search_enabled(),
+            )
+            if decision.action == "verification_failed":
+                terminal = self._policy.decide_after_verification_terminal_failure()
+                return terminal.action, terminal.reason
+            return decision.action, decision.reason
+
+        if context == "after_web_search":
+            decision = self._policy.decide_after_web_search()
+            return decision.action, decision.reason
+
+        if context == "after_refinement":
+            decision = self._policy.decide_after_refinement()
+            return decision.action, decision.reason
+
+        if context == "after_refinement_failure":
+            decision = self._policy.decide_after_refinement_failure(state.get("refinement_attempts", 0))
+            return decision.action, decision.reason
+
+        if context == "after_refinement_reflection":
+            return "refinement", "Reflection completed, so refinement will retry."
+
+        if context == "after_refinement_verification":
+            decision = self._policy.decide_after_refinement_verification(
+                state.get("verification_result")
+            )
+            if decision.action == "refinement_failed":
+                terminal = self._policy.decide_after_refinement_terminal_failure()
+                return terminal.action, terminal.reason
+            return decision.action, decision.reason
+
+        return "end", "No planner context was set, so the graph will stop."
+
+    def _clone_state(self, state: AgentWorkflowState) -> AgentWorkflowState:
+        return clone_graph_state(state)
+
+    def _get_classifier(self) -> PrimaryClassificationService:
+        if self._classifier is None:
+            self._classifier = PrimaryClassificationService.from_settings(self._settings)
+        return self._classifier
+
+    def _classify_with_optional_reflection(
+        self,
+        classifier: Any,
+        processed_error: Any,
+        evidence: list[Any],
+        reflection_note: str | None,
+    ) -> Any:
+        if reflection_note:
+            return classifier.classify_and_resolve(
+                processed_error,
+                evidence,
+                reflection_note=reflection_note,
+            )
+        return classifier.classify_and_resolve(processed_error, evidence)
+
+    def _refine_with_optional_reflection(
+        self,
+        classifier: Any,
+        processed_error: Any,
+        evidence: list[Any],
+        web_search_results: list[Any],
+        reflection_note: str | None,
+    ) -> Any:
+        if reflection_note:
+            return classifier.refine_with_web_search(
+                processed_error,
+                evidence,
+                web_search_results,
+                reflection_note=reflection_note,
+            )
+        return classifier.refine_with_web_search(processed_error, evidence, web_search_results)
+
+    def _is_search_enabled(self) -> bool:
+        search_settings = getattr(self._settings, "search", None)
+        return getattr(search_settings, "enabled", True)
+
+    def _latest_reflection_note(self, state: AgentWorkflowState) -> str | None:
+        notes = state.get("reflection_notes", [])
+        return notes[-1] if notes else None
+
+    def _build_reflection_note(self, state: AgentWorkflowState) -> str:
+        context = state.get("reflection_context") or "unknown"
+        error = state.get("error") or {}
+        if context == "primary_classification":
+            return (
+                "Retry primary classification with a narrower grounded answer and explicit use of evidence only. "
+                f"Previous issue: {error.get('message', 'classification failure')}."
+            )
+        if context == "refinement":
+            return (
+                "Retry refinement using concise synthesis of KB and web evidence with explicit grounding. "
+                f"Previous issue: {error.get('message', 'refinement failure')}."
+            )
+        return "Retry with a narrower grounded answer."
+
+    def _build_memory_signals(self, state: AgentWorkflowState) -> dict[str, Any]:
+        verification = state.get("verification_result")
+        web_results = state.get("web_search_results", [])
+        evidence = state.get("evidence", [])
+        return {
+            "outcome_source": state.get("outcome_source"),
+            "final_status": state.get("status"),
+            "verification_confidence": verification.confidence if verification else None,
+            "verification_passed": verification.passed if verification else None,
+            "needs_web_search": verification.needs_web_search if verification else None,
+            "web_result_count": len(web_results),
+            "used_web_search": bool(web_results),
+            "classification_attempts": state.get("classification_attempts", 0),
+            "refinement_attempts": state.get("refinement_attempts", 0),
+            "reflection_count": len(state.get("reflection_notes", [])),
+            "evidence_kb_ids": ",".join(item.kb_id for item in evidence) or None,
+            "has_direct_match": state.get("direct_match") is not None,
+        }

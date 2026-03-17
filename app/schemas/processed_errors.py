@@ -58,6 +58,13 @@ class GroundingEvidence(BaseModel):
     resolution_type: str | None = None
 
 
+class KbRetrievalResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    evidence: list[GroundingEvidence] = Field(default_factory=list)
+    direct_match: GroundingEvidence | None = None
+
+
 class ClassificationResolutionResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

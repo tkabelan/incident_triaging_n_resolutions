@@ -42,10 +42,13 @@ pyproject.toml
 ./app/verification/service.py
 ./app/workflows/__init__.py
 ./app/workflows/error_processing.py
+./app/workflows/state.py
 app/__init__.py
 app/logging_config.py
 app/main.py
 app/run_first_three_errors.py
+app/run_single_error.py
+app/test_openai_call.py
 app/agents/__init__.py
 app/agents/classification_service.py
 app/api/__init__.py
@@ -63,8 +66,11 @@ app/mcp_server/__init__.py
 app/mcp_server/bootstrap.py
 app/mcp_server/raw_ingestion.py
 app/mcp_server/server.py
+app/mcp_server/verification.py
+app/mcp_server/web_search.py
 app/normalization/__init__.py
 app/normalization/error_normalizer.py
+app/normalization/taxonomy.py
 app/retrieval/__init__.py
 app/retrieval/kb_retriever.py
 app/retrieval/local_embeddings.py
@@ -72,10 +78,12 @@ app/schemas/__init__.py
 app/schemas/error_records.py
 app/schemas/processed_errors.py
 app/search/__init__.py
+app/search/tavily_search.py
 app/storage/__init__.py
 app/storage/processed_error_storage.py
 app/storage/raw_error_storage.py
 app/verification/__init__.py
+app/verification/service.py
 app/workflows/__init__.py
 app/workflows/error_processing.py
 docs/specification.md
@@ -96,3 +104,4 @@ tests/test_mcp_raw_ingestion.py
 tests/test_raw_error_storage.py
 tests/test_single_error_runner.py
 tests/test_verification_workflow.py
+tests/test_workflow_state.py

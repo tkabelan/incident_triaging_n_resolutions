@@ -4,6 +4,7 @@ from app.schemas.error_records import RawErrorIngestionResponse, RawErrorRecord
 from app.schemas.processed_errors import (
     ClassificationResolutionResult,
     GroundingEvidence,
+    KbRetrievalResponse,
     ProcessedErrorRecord,
     VerificationResult,
     WebSearchResult,
@@ -24,6 +25,9 @@ class FakeIngestionService:
 
 
 class FakeMcpClient:
+    def __init__(self) -> None:
+        self.verify_calls = 0
+
     def ingest_raw_error(self, record: RawErrorRecord) -> RawErrorIngestionResponse:
         return RawErrorIngestionResponse(
             accepted=True,
@@ -33,11 +37,41 @@ class FakeMcpClient:
         )
 
     def verify_resolution(self, _processed_error, _classification, _evidence) -> VerificationResult:
+        self.verify_calls += 1
+        if self.verify_calls == 1:
+            return VerificationResult(
+                passed=False,
+                confidence=0.32,
+                reasoning="Grounding is weak.",
+                needs_web_search=True,
+            )
         return VerificationResult(
-            passed=False,
-            confidence=0.32,
-            reasoning="Grounding is weak.",
-            needs_web_search=True,
+            passed=True,
+            confidence=0.81,
+            reasoning="Refined answer is now grounded well enough.",
+            needs_web_search=False,
+        )
+
+    def retrieve_kb(self, _processed_error: ProcessedErrorRecord) -> KbRetrievalResponse:
+        return KbRetrievalResponse(
+            evidence=[
+                GroundingEvidence(
+                    kb_id="kb1",
+                    title="title",
+                    category="access_denied",
+                    resolution="fix it",
+                    notes="note",
+                    score=0.9,
+                    source_type="seed",
+                    error_type="access_denied",
+                    exception_type="AccessDeniedException",
+                    severity="high",
+                    service_hint="s3",
+                    retryable=False,
+                    resolution_type="permission_fix",
+                )
+            ],
+            direct_match=None,
         )
 
     def web_search(self, _query: str) -> list[WebSearchResult]:
@@ -73,24 +107,8 @@ class FakeNormalizer:
 
 
 class FakeRetriever:
-    def retrieve(self, _processed_error: ProcessedErrorRecord):
-        return [
-            GroundingEvidence(
-                kb_id="kb1",
-                title="title",
-                category="access_denied",
-                resolution="fix it",
-                notes="note",
-                score=0.9,
-                source_type="seed",
-                error_type="access_denied",
-                exception_type="AccessDeniedException",
-                severity="high",
-                service_hint="s3",
-                retryable=False,
-                resolution_type="permission_fix",
-            )
-        ]
+    def upsert_verified_resolution(self, _processed_error, _classification, memory_signals=None) -> str:
+        return "learned-kb-id"
 
 
 class FakeClassifier:
@@ -100,6 +118,15 @@ class FakeClassifier:
             confidence=0.8,
             reasoning="grounded",
             proposed_resolution="fix it",
+            evidence=[],
+        )
+
+    def refine_with_web_search(self, _processed_error: ProcessedErrorRecord, _evidence, _web_results):
+        return ClassificationResolutionResult(
+            category="access_denied",
+            confidence=0.87,
+            reasoning="Refined with web evidence.",
+            proposed_resolution="check IAM and verify service connectivity",
             evidence=[],
         )
 
@@ -128,6 +155,7 @@ def test_workflow_runs_web_search_when_verification_fails() -> None:
 
     results = workflow.run_first_three_errors()
 
-    assert results[0]["status"] == "needs_refinement"
-    assert results[0]["verification"]["needs_web_search"] is True
+    assert results[0]["status"] == "success_after_refinement"
+    assert "web_search_completed" in results[0]["steps"]
+    assert results[0]["stage_details"]["web_search"]["status"] == "pass"
     assert len(results[0]["web_search_results"]) == 1

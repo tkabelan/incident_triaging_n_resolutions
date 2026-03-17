@@ -562,3 +562,181 @@ A task is done only when:
 - raw and processed separation is preserved where relevant
 - the task can be tested in isolation
 - failure behavior is explicit
+
+## Phase 3: Full Agentic App
+
+Goal:
+
+Move from a workflow-driven prototype to a truly agentic app where planning, tool choice, branching, retries, and learning are explicit and stateful.
+
+### Task 3.1: Replace the custom workflow with a LangGraph graph
+
+Scope:
+
+- Move the orchestration in `app/workflows/error_processing.py` into LangGraph nodes and edges.
+- Preserve the existing end-to-end behavior while making state transitions explicit.
+
+Acceptance criteria:
+
+- The flow runs as a LangGraph graph, not only as custom Python branching.
+- Node transitions are traceable and testable.
+
+Test in isolation:
+
+- Execute the graph for a single error and verify node order and transitions.
+
+### Task 3.2: Define a first-class graph state model
+
+Scope:
+
+- Create a single state object for raw input, normalization, taxonomy, retrieval evidence, classification, verification, web search, refinement, KB updates, and audit data.
+
+Acceptance criteria:
+
+- All nodes read and write through the shared state model.
+
+Test in isolation:
+
+- Validate state transitions across multiple graph nodes.
+
+### Task 3.3: Expose KB retrieval through MCP and use it inside the graph
+
+Scope:
+
+- Remove direct retrieval calls from the workflow layer.
+- Use MCP for KB retrieval in the same way as verification and web search.
+
+Acceptance criteria:
+
+- The graph uses MCP tools consistently for tool-backed operations.
+
+Test in isolation:
+
+- Retrieve KB evidence through the MCP client inside a graph run.
+
+### Task 3.4: Add a planner/decision node
+
+Scope:
+
+- Introduce a decision node that decides the next action based on graph state.
+- Decisions include:
+  - resolve from KB
+  - classify with LLM
+  - verify
+  - web search
+  - refine
+  - escalate to human review
+
+Acceptance criteria:
+
+- Decisioning is explicit and not spread across unrelated code branches.
+
+Test in isolation:
+
+- Run different states through the planner and verify the chosen next action.
+
+### Task 3.5: Separate policy from reasoning
+
+Scope:
+
+- Move thresholds and operational rules into config/policy functions.
+- Examples:
+  - direct KB match threshold
+  - verification confidence threshold
+  - max retry count
+  - web-search trigger rules
+
+Acceptance criteria:
+
+- Policy can be changed without rewriting core reasoning code.
+
+Test in isolation:
+
+- Verify that threshold changes alter graph behavior correctly.
+
+### Task 3.6: Add retry and reflection behavior
+
+Scope:
+
+- Add one retry path for failed classification/verification where appropriate.
+- Add a reflection step that can simplify prompts or alter search strategy on failure.
+
+Acceptance criteria:
+
+- The graph can recover from transient or weak-result scenarios without hard-failing immediately.
+
+Test in isolation:
+
+- Simulate a first-pass failure and verify the retry/reflection branch runs.
+
+### Task 3.7: Add a human-review exit path
+
+Scope:
+
+- Define a terminal state for low-confidence or conflicting outcomes.
+- Return the best current answer plus explicit uncertainty and recommended human action.
+
+Acceptance criteria:
+
+- The system can stop safely when it should not continue autonomously.
+
+Test in isolation:
+
+- Feed a low-confidence state and verify the graph exits to review.
+
+### Task 3.8: Expand KB memory and learning signals
+
+Scope:
+
+- Store not only final resolutions but also:
+  - failed hypotheses
+  - verification outcomes
+  - useful web evidence
+  - whether the answer came from KB, LLM, or refined search
+
+Acceptance criteria:
+
+- The KB becomes a reusable memory surface, not just a resolution store.
+
+Test in isolation:
+
+- Verify learned metadata is written and retrievable later.
+
+### Task 3.9: Add agent trace output for frontend consumption
+
+Scope:
+
+- Return a clean frontend-friendly trace of what the agent did:
+  - which tools were used
+  - what was skipped
+  - what confidence each stage produced
+  - final answer source
+
+Acceptance criteria:
+
+- A frontend can display the agent reasoning path without parsing raw logs.
+
+Test in isolation:
+
+- Run a single error and verify the response includes a structured agent trace.
+
+### Task 3.10: Add FastAPI endpoint for single-error interactive use
+
+Scope:
+
+- Add an API endpoint that accepts one error text and returns the agent trace plus classification and resolution.
+
+Acceptance criteria:
+
+- The endpoint is suitable for wiring into the future frontend input field.
+
+Test in isolation:
+
+- Call the endpoint with one error and verify the response contract.
+
+## Next Focus
+
+The next implementation phase should target Phase 3, starting with:
+
+1. Task 3.9: Add agent trace output for frontend consumption
+2. Task 3.10: Add FastAPI endpoint for single-error interactive use

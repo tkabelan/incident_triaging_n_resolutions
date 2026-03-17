@@ -116,6 +116,7 @@ class KnowledgeBaseRetriever:
         self,
         processed_error: ProcessedErrorRecord,
         classification: ClassificationResolutionResult,
+        memory_signals: dict[str, Any] | None = None,
     ) -> str:
         kb_id = self._build_kb_id(processed_error)
         text = (
@@ -139,6 +140,8 @@ class KnowledgeBaseRetriever:
             "retryable": processed_error.retryable,
             "resolution_type": processed_error.resolution_type,
         }
+        if memory_signals:
+            metadata.update(_sanitize_metadata(memory_signals))
         self._vector_store.add_texts(
             texts=[text],
             metadatas=[_sanitize_metadata(metadata)],

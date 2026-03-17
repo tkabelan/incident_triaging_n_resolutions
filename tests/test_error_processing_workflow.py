@@ -4,7 +4,9 @@ from app.schemas.error_records import RawErrorIngestionResponse, RawErrorRecord
 from app.schemas.processed_errors import (
     ClassificationResolutionResult,
     GroundingEvidence,
+    KbRetrievalResponse,
     ProcessedErrorRecord,
+    VerificationResult,
 )
 from app.workflows.error_processing import ErrorProcessingWorkflow
 
@@ -36,6 +38,36 @@ class FakeMcpClient:
             message="ok",
         )
 
+    def verify_resolution(self, processed_error, classification, evidence) -> VerificationResult:
+        return VerificationResult(
+            passed=True,
+            confidence=classification.confidence,
+            reasoning=f"Verified {processed_error.row_id}",
+            needs_web_search=False,
+        )
+
+    def retrieve_kb(self, _processed_error: ProcessedErrorRecord) -> KbRetrievalResponse:
+        return KbRetrievalResponse(
+            evidence=[
+                GroundingEvidence(
+                    kb_id="kb1",
+                    title="title",
+                    category="access_denied",
+                    resolution="fix it",
+                    notes="note",
+                    score=0.9,
+                    source_type="seed",
+                    error_type="access_denied",
+                    exception_type="AccessDeniedException",
+                    severity="high",
+                    service_hint="s3",
+                    retryable=False,
+                    resolution_type="permission_fix",
+                )
+            ],
+            direct_match=None,
+        )
+
 
 class FakeNormalizer:
     def normalize_from_storage(self, raw_storage_reference: str):
@@ -60,24 +92,8 @@ class FakeNormalizer:
 
 
 class FakeRetriever:
-    def retrieve(self, _processed_error: ProcessedErrorRecord):
-        return [
-            GroundingEvidence(
-                kb_id="kb1",
-                title="title",
-                category="access_denied",
-                resolution="fix it",
-                notes="note",
-                score=0.9,
-                source_type="seed",
-                error_type="access_denied",
-                exception_type="AccessDeniedException",
-                severity="high",
-                service_hint="s3",
-                retryable=False,
-                resolution_type="permission_fix",
-            )
-        ]
+    def upsert_verified_resolution(self, _processed_error, _classification, memory_signals=None) -> str:
+        return "learned-kb-id"
 
 
 class RateLimitError(Exception):
@@ -118,6 +134,7 @@ def test_workflow_records_rate_limit_and_continues() -> None:
     results = workflow.run_first_three_errors()
 
     assert len(results) == 2
-    assert results[0]["status"] == "failed"
-    assert results[0]["error"]["is_rate_limited"] is True
+    assert results[0]["status"] == "human_review_required"
+    assert results[0]["classification_attempts"] == 2
+    assert results[0]["human_review_reason"] is not None
     assert results[1]["status"] == "success"

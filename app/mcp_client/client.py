@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 
+from app.mcp_server.kb_retrieval import KB_RETRIEVAL_TOOL
 from app.mcp_server.raw_ingestion import RAW_INGESTION_TOOL
 from app.mcp_server.server import McpServer
 from app.mcp_server.verification import VERIFICATION_TOOL
@@ -10,6 +11,7 @@ from app.schemas.error_records import RawErrorIngestionResponse, RawErrorRecord
 from app.schemas.processed_errors import (
     ClassificationResolutionResult,
     GroundingEvidence,
+    KbRetrievalResponse,
     ProcessedErrorRecord,
     VerificationResult,
     WebSearchResult,
@@ -27,6 +29,19 @@ class LangChainMcpClient:
         logger.info("Submitting raw error record %s through MCP", record.row_id)
         response = self._server.call_tool(RAW_INGESTION_TOOL, {"record": record.model_dump()})
         return RawErrorIngestionResponse.model_validate(response)
+
+    def retrieve_kb(
+        self,
+        processed_error: ProcessedErrorRecord,
+    ) -> KbRetrievalResponse:
+        logger.info("Submitting KB retrieval for row %s through MCP", processed_error.row_id)
+        response = self._server.call_tool(
+            KB_RETRIEVAL_TOOL,
+            {
+                "processed_error": processed_error.model_dump(),
+            },
+        )
+        return KbRetrievalResponse.model_validate(response)
 
     def verify_resolution(
         self,

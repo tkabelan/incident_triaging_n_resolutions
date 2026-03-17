@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 from app.schemas.error_records import RawErrorIngestionResponse, RawErrorRecord
-from app.schemas.processed_errors import ClassificationResolutionResult, GroundingEvidence, ProcessedErrorRecord
+from app.schemas.processed_errors import (
+    ClassificationResolutionResult,
+    GroundingEvidence,
+    KbRetrievalResponse,
+    ProcessedErrorRecord,
+)
 from app.workflows.error_processing import ErrorProcessingWorkflow
 
 
@@ -13,6 +18,26 @@ class FakeMcpClient:
             storage_reference="data/raw/manual_input-manual-1.json",
             message="ok",
         )
+
+    def retrieve_kb(self, _processed_error: ProcessedErrorRecord) -> KbRetrievalResponse:
+        evidence = [
+            GroundingEvidence(
+                kb_id="kb1",
+                title="title",
+                category="access_denied",
+                resolution="check IAM",
+                notes="note",
+                score=0.95,
+                source_type="learned",
+                error_type="access_denied",
+                exception_type="AccessDeniedException",
+                severity="high",
+                service_hint="s3",
+                retryable=False,
+                resolution_type="permission_fix",
+            )
+        ]
+        return KbRetrievalResponse(evidence=evidence, direct_match=evidence[0])
 
 
 class FakeNormalizer:
@@ -37,28 +62,6 @@ class FakeNormalizer:
 
 
 class FakeRetriever:
-    def retrieve(self, _processed_error):
-        return [
-            GroundingEvidence(
-                kb_id="kb1",
-                title="title",
-                category="access_denied",
-                resolution="check IAM",
-                notes="note",
-                score=0.95,
-                source_type="learned",
-                error_type="access_denied",
-                exception_type="AccessDeniedException",
-                severity="high",
-                service_hint="s3",
-                retryable=False,
-                resolution_type="permission_fix",
-            )
-        ]
-
-    def get_direct_match(self, evidence):
-        return evidence[0]
-
     def build_classification_from_match(self, processed_error, match, evidence):
         return ClassificationResolutionResult(
             category=match.category,

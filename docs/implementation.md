@@ -4,30 +4,20 @@
 
 ## Current Scope
 
-Implement current foundation plus selected Phase 2 tasks:
+The current prototype has completed the workflow-driven Phase 2 implementation.
 
-1. Set up the project scaffold
-2. Define runtime and development dependencies
-3. Add JSON config loading
-4. Add centralized logging
-5. Implement Task 2.1: CSV error ingestion service
-6. Implement Task 2.2: Raw error ingestion through MCP
-7. Implement Task 2.4: Normalize errors
-8. Implement Step 6: Retrieve KB grounding
-9. Implement Step 7: Classify and propose resolution
-10. Replace Step 6 with ChromaDB-backed retrieval
-11. Replace Step 7 with LangChain structured output
-12. Add end-to-end runner for the first three errors
-13. Replace remote embeddings with a local embedding backend for Chroma
-14. Disable Chroma telemetry in local runs
-15. Add graceful per-error handling for 429/rate-limit failures
-16. Add single-call OpenAI diagnostic script
-17. Implement Step 8 through MCP using the same LLM model for now
-18. Implement Step 9 web search through MCP using Tavily
-19. Add retrieval-first short-circuit for repeated errors
-20. Add KB write-back for verified outcomes
-21. Add single-error runner with step trace for manual testing
-22. Implement Step 10: refine final answer after web search
+The next scope is to turn it into a fully agentic app:
+
+1. Replace the custom workflow with a LangGraph graph
+2. Define a first-class graph state model
+3. Route KB retrieval through MCP as a tool
+4. Add a planner/decision node
+5. Separate policy from reasoning
+6. Add retry and reflection behavior
+7. Add a human-review exit path
+8. Expand KB memory signals
+9. Add frontend-friendly agent trace output
+10. Add a single-error FastAPI endpoint for interactive use
 
 ## Status
 
@@ -55,6 +45,16 @@ Implement current foundation plus selected Phase 2 tasks:
 - [x] KB write-back for verified outcomes
 - [x] Single-error runner with step trace
 - [x] Step 10: refine final answer after web search
+- [x] Task 3.1: Replace the custom workflow with a LangGraph graph
+- [x] Task 3.2: Define a first-class graph state model
+- [x] Task 3.3: Expose KB retrieval through MCP and use it inside the graph
+- [x] Task 3.4: Add a planner/decision node
+- [x] Task 3.5: Separate policy from reasoning
+- [x] Task 3.6: Add retry and reflection behavior
+- [x] Task 3.7: Add a human-review exit path
+- [x] Task 3.8: Expand KB memory and learning signals
+- [ ] Task 3.9: Add frontend-friendly agent trace output
+- [ ] Task 3.10: Add single-error FastAPI endpoint
 
 ## Implemented Files
 
@@ -106,7 +106,32 @@ Implement current foundation plus selected Phase 2 tasks:
 ### End-to-End Runner
 
 - Workflow runner: [app/workflows/error_processing.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/workflows/error_processing.py)
+- Graph state model: [app/workflows/state.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/workflows/state.py)
 - CLI entrypoint: [app/run_first_three_errors.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/run_first_three_errors.py)
+
+### Planner
+
+- Planner node and routing logic: [app/workflows/error_processing.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/workflows/error_processing.py)
+- Planner state fields: [app/workflows/state.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/workflows/state.py)
+
+### Policy
+
+- Workflow policy rules: [app/workflows/policy.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/workflows/policy.py)
+- Workflow policy config: [app/core/config.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/core/config.py)
+- Workflow policy values: [config/config.json](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/config/config.json)
+
+### Retry, Review, and Memory
+
+- Retry/reflection and human-review flow: [app/workflows/error_processing.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/workflows/error_processing.py)
+- Expanded workflow state: [app/workflows/state.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/workflows/state.py)
+- KB memory write-back metadata: [app/retrieval/kb_retriever.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/retrieval/kb_retriever.py)
+- Reflection-aware classification: [app/agents/classification_service.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/agents/classification_service.py)
+
+### MCP Retrieval
+
+- MCP KB retrieval handler: [app/mcp_server/kb_retrieval.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/mcp_server/kb_retrieval.py)
+- MCP bootstrap registration: [app/mcp_server/bootstrap.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/mcp_server/bootstrap.py)
+- MCP client retrieval method: [app/mcp_client/client.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/mcp_client/client.py)
 
 ### Tests
 
@@ -114,10 +139,15 @@ Implement current foundation plus selected Phase 2 tasks:
 - Health API tests: [tests/test_health.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/tests/test_health.py)
 - CSV ingestion tests: [tests/test_csv_ingestion.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/tests/test_csv_ingestion.py)
 - MCP raw ingestion tests: [tests/test_mcp_raw_ingestion.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/tests/test_mcp_raw_ingestion.py)
+- MCP KB retrieval tests: [tests/test_mcp_kb_retrieval.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/tests/test_mcp_kb_retrieval.py)
+- Workflow planner tests: [tests/test_workflow_planner.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/tests/test_workflow_planner.py)
+- Workflow policy tests: [tests/test_workflow_policy.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/tests/test_workflow_policy.py)
+- Retry and human-review tests: [tests/test_workflow_retry_and_review.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/tests/test_workflow_retry_and_review.py)
+- Workflow state tests: [tests/test_workflow_state.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/tests/test_workflow_state.py)
 
 ## Workflow Map
 
-Current workflow shape:
+Current implemented workflow shape:
 
 1. Read CSV errors
 2. Convert rows into raw error records
@@ -176,22 +206,25 @@ Current workflow shape:
 - Step 11: Update KB
   Status: done
 
-## Next Task: Verification
+## Next Task
 
-The next step is verification with a second model or verification service.
+The next implementation target is to make the app fully agentic.
 
-What it should do:
+Immediate next tasks:
 
-- take the structured classification and proposed resolution
-- verify whether the grounded answer is acceptable
-- return pass/fail, confidence, and disagreement reasons
-- decide whether fallback web search is needed
+- Task 3.9: Add frontend-friendly agent trace output
+- Task 3.10: Add single-error FastAPI endpoint
 
-Expected implementation area:
+Expected result:
 
-- verification schemas and service under `app/verification`
-- optional MCP exposure for verification
-- tests for pass/fail verification paths
+- orchestration now runs through LangGraph with explicit node transitions
+- graph state now has a dedicated model instead of loose workflow-local dict handling
+- KB retrieval now runs through MCP like the other tool-backed stages
+- next-step decisions now pass through an explicit planner node
+- thresholds and operational rules now live in a dedicated workflow policy layer
+- the graph now supports reflection-based retries and a safe human-review terminal state
+- verified outcomes now write richer memory signals back into the KB
+- the next step is to expose a cleaner frontend-facing trace and interactive endpoint
 
 ## Canonical References
 

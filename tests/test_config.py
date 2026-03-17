@@ -53,6 +53,17 @@ def test_load_config(tmp_path: Path) -> None:
                     "api_key_env_var": "TAVILY_API_KEY",
                     "max_results": 3,
                     "search_depth": "basic"
+                },
+                "workflow": {
+                    "allow_direct_kb_resolution": True,
+                    "verification_confidence_threshold": 0.6,
+                    "refinement_confidence_threshold": 0.7,
+                    "use_web_search_on_low_confidence": True,
+                    "update_kb_on_verified": True,
+                    "max_classification_retries": 1,
+                    "max_refinement_retries": 1,
+                    "route_failed_verification_to_human_review": True,
+                    "route_failed_refinement_to_human_review": True
                 }
             }
         ),
@@ -63,6 +74,8 @@ def test_load_config(tmp_path: Path) -> None:
 
     assert settings.app.name == "test-service"
     assert settings.logging.level == "DEBUG"
+    assert settings.workflow.verification_confidence_threshold == 0.6
+    assert settings.workflow.max_classification_retries == 1
 
 
 def test_load_config_rejects_invalid_schema(tmp_path: Path) -> None:
