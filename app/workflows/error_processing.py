@@ -23,7 +23,6 @@ from app.workflows.state import (
     new_graph_state,
 )
 
-
 logger = logging.getLogger(__name__)
 MAX_WEB_SEARCH_QUERY_LENGTH = 380
 
@@ -51,7 +50,10 @@ class ErrorProcessingWorkflow:
         self._graph = self._build_graph()
 
     def run_first_three_errors(self) -> list[dict]:
-        csv_path = Path(self._settings.ingestion.error_data_dir) / self._settings.ingestion.default_csv_file
+        csv_path = (
+            Path(self._settings.ingestion.error_data_dir)
+            / self._settings.ingestion.default_csv_file
+        )
         logger.info("Starting end-to-end processing for first three errors from %s", csv_path)
         results: list[dict] = []
         for raw_record in self._ingestion_service.read_errors(csv_path):
@@ -282,7 +284,9 @@ class ErrorProcessingWorkflow:
             updates["steps"].append("failed")
             return updates
         updates["verification_result"] = verification
-        updates["stage_details"]["verification_llm"]["status"] = "pass" if verification.passed else "fail"
+        updates["stage_details"]["verification_llm"]["status"] = (
+            "pass" if verification.passed else "fail"
+        )
         updates["stage_details"]["verification_llm"]["confidence"] = verification.confidence
         if verification.passed:
             updates["stage_details"]["verification_llm"]["error"] = None
@@ -295,7 +299,9 @@ class ErrorProcessingWorkflow:
         updates = self._clone_state(state)
         updates["steps"].append("kb_update_started")
         updates["outcome_source"] = (
-            "refined_after_web_search" if "refinement_completed" in updates["steps"] else "llm_verified"
+            "refined_after_web_search"
+            if "refinement_completed" in updates["steps"]
+            else "llm_verified"
         )
         updates["memory_signals"] = self._build_memory_signals(updates)
         updates["kb_update_reference"] = self._retriever.upsert_verified_resolution(
@@ -308,7 +314,9 @@ class ErrorProcessingWorkflow:
             updates["stage_details"]["web_search"]["status"] = "skipped"
         if "refinement_completed" not in updates["steps"]:
             updates["stage_details"]["refinement_llm"]["status"] = "skipped"
-        updates["status"] = "success_after_refinement" if "refinement_completed" in updates["steps"] else "success"
+        updates["status"] = (
+            "success_after_refinement" if "refinement_completed" in updates["steps"] else "success"
+        )
         return updates
 
     def _verification_failed_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
@@ -321,7 +329,9 @@ class ErrorProcessingWorkflow:
     def _web_search_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
         updates = self._clone_state(state)
         updates["steps"].append("web_search_started")
-        query = self._build_web_search_query(state["processed_error"], state["classification_result"])
+        query = self._build_web_search_query(
+            state["processed_error"], state["classification_result"]
+        )
         updates["search_query"] = query
         try:
             web_results = self._mcp_client.web_search(query)
@@ -387,7 +397,9 @@ class ErrorProcessingWorkflow:
             updates["steps"].append("failed")
             return updates
         updates["verification_result"] = refined_verification
-        updates["stage_details"]["verification_llm"]["status"] = "pass" if refined_verification.passed else "fail"
+        updates["stage_details"]["verification_llm"]["status"] = (
+            "pass" if refined_verification.passed else "fail"
+        )
         updates["stage_details"]["verification_llm"]["confidence"] = refined_verification.confidence
         if refined_verification.passed:
             updates["stage_details"]["verification_llm"]["error"] = None
@@ -414,7 +426,9 @@ class ErrorProcessingWorkflow:
     def _human_review_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
         updates = self._clone_state(state)
         updates["status"] = "human_review_required"
-        updates["human_review_reason"] = state.get("decision_reason") or "Workflow escalated to human review."
+        updates["human_review_reason"] = (
+            state.get("decision_reason") or "Workflow escalated to human review."
+        )
         updates["steps"].append("human_review_required")
         updates["stage_details"]["human_review"]["status"] = "pass"
         updates["stage_details"]["human_review"]["reasoning"] = updates["human_review_reason"]
@@ -450,7 +464,10 @@ class ErrorProcessingWorkflow:
             return decision.action, decision.reason
 
         if context == "after_primary_classification_reflection":
-            return "primary_classification", "Reflection completed, so the primary classifier will retry."
+            return (
+                "primary_classification",
+                "Reflection completed, so the primary classifier will retry.",
+            )
 
         if context == "after_verification":
             decision = self._policy.decide_after_verification(
@@ -471,7 +488,9 @@ class ErrorProcessingWorkflow:
             return decision.action, decision.reason
 
         if context == "after_refinement_failure":
-            decision = self._policy.decide_after_refinement_failure(state.get("refinement_attempts", 0))
+            decision = self._policy.decide_after_refinement_failure(
+                state.get("refinement_attempts", 0)
+            )
             return decision.action, decision.reason
 
         if context == "after_refinement_reflection":

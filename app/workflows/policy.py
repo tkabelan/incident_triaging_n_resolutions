@@ -27,7 +27,9 @@ class WorkflowPolicy:
     def from_settings(cls, settings) -> "WorkflowPolicy":
         workflow_settings = getattr(settings, "workflow", None)
         return cls(
-            allow_direct_kb_resolution=getattr(workflow_settings, "allow_direct_kb_resolution", True),
+            allow_direct_kb_resolution=getattr(
+                workflow_settings, "allow_direct_kb_resolution", True
+            ),
             verification_confidence_threshold=getattr(
                 workflow_settings,
                 "verification_confidence_threshold",
@@ -83,7 +85,10 @@ class WorkflowPolicy:
     ) -> PolicyDecision:
         if verification is None:
             return PolicyDecision("end", "Verification result is missing.")
-        if verification.passed and verification.confidence >= self.verification_confidence_threshold:
+        if (
+            verification.passed
+            and verification.confidence >= self.verification_confidence_threshold
+        ):
             if self.update_kb_on_verified:
                 return PolicyDecision(
                     action="kb_update",
@@ -95,7 +100,8 @@ class WorkflowPolicy:
             )
         low_confidence = verification.confidence < self.verification_confidence_threshold
         if search_enabled and (
-            verification.needs_web_search or (low_confidence and self.use_web_search_on_low_confidence)
+            verification.needs_web_search
+            or (low_confidence and self.use_web_search_on_low_confidence)
         ):
             return PolicyDecision(
                 action="web_search",
@@ -118,7 +124,9 @@ class WorkflowPolicy:
             reason="Policy requires a second verification after refinement.",
         )
 
-    def decide_after_refinement_verification(self, verification: VerificationResult | None) -> PolicyDecision:
+    def decide_after_refinement_verification(
+        self, verification: VerificationResult | None
+    ) -> PolicyDecision:
         if verification is None:
             return PolicyDecision("end", "Refinement verification result is missing.")
         if verification.passed and verification.confidence >= self.refinement_confidence_threshold:

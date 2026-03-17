@@ -4,7 +4,6 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
-
 logger = logging.getLogger(__name__)
 
 McpHandler = Callable[[dict[str, Any]], dict[str, Any]]

@@ -167,7 +167,8 @@ class AgentWorkflowStateModel(BaseModel):
             "steps": list(self.steps),
             "agent_trace": self._build_agent_trace(),
             "stage_details": {
-                name: detail.model_dump(exclude_none=True) for name, detail in self.stage_details.items()
+                name: detail.model_dump(exclude_none=True)
+                for name, detail in self.stage_details.items()
             },
             "kb_match_found": bool(self.evidence),
             "kb_direct_match": self.direct_match is not None,
@@ -175,8 +176,12 @@ class AgentWorkflowStateModel(BaseModel):
             "raw_storage_reference": self.raw_storage_reference,
             "processed_storage_reference": self.processed_storage_reference,
             "processed_error": self.processed_error.model_dump() if self.processed_error else None,
-            "classification": self.classification_result.model_dump() if self.classification_result else None,
-            "verification": self.verification_result.model_dump() if self.verification_result else None,
+            "classification": (
+                self.classification_result.model_dump() if self.classification_result else None
+            ),
+            "verification": (
+                self.verification_result.model_dump() if self.verification_result else None
+            ),
             "web_search_results": [item.model_dump() for item in self.web_search_results],
             "kb_update_reference": self.kb_update_reference,
             "next_action": self.next_action,
@@ -232,8 +237,16 @@ class AgentWorkflowStateModel(BaseModel):
             },
             "refinement_llm": {
                 **self.stage_details["refinement_llm"].model_dump(exclude_none=True),
-                "classification": classification.category if "refinement_completed" in self.steps and classification else None,
-                "resolution": classification.proposed_resolution if "refinement_completed" in self.steps and classification else None,
+                "classification": (
+                    classification.category
+                    if "refinement_completed" in self.steps and classification
+                    else None
+                ),
+                "resolution": (
+                    classification.proposed_resolution
+                    if "refinement_completed" in self.steps and classification
+                    else None
+                ),
                 "attempts": self.refinement_attempts,
             },
             "reflection": {
@@ -253,7 +266,9 @@ class AgentWorkflowStateModel(BaseModel):
             "branch_explanation": self._build_branch_explanation(),
             "kb_update_triggered": self.kb_update_reference is not None,
             "kb_update_reference": self.kb_update_reference,
-            "kb_update_reason": self.decision_reason if self.kb_update_reference is not None else None,
+            "kb_update_reason": (
+                self.decision_reason if self.kb_update_reference is not None else None
+            ),
             "steps": list(self.steps),
             "stages": stages,
         }

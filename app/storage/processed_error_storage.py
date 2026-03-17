@@ -6,7 +6,6 @@ from pathlib import Path
 
 from app.schemas.processed_errors import ProcessedErrorRecord
 
-
 logger = logging.getLogger(__name__)
 
 

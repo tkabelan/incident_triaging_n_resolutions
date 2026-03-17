@@ -19,7 +19,9 @@ class DummySettings:
 
 
 def _workflow() -> ErrorProcessingWorkflow:
-    return ErrorProcessingWorkflow(DummySettings(), mcp_client=object(), normalizer=object(), retriever=object())
+    return ErrorProcessingWorkflow(
+        DummySettings(), mcp_client=object(), normalizer=object(), retriever=object()
+    )
 
 
 def test_planner_prefers_direct_kb_resolution() -> None:

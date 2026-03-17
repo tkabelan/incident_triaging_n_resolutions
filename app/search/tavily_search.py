@@ -8,7 +8,6 @@ from tavily import TavilyClient
 
 from app.schemas.processed_errors import WebSearchResult
 
-
 logger = logging.getLogger(__name__)
 MAX_ERROR_MESSAGE_LENGTH = 399
 

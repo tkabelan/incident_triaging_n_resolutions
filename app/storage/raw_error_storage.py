@@ -6,7 +6,6 @@ from pathlib import Path
 
 from app.schemas.error_records import RawErrorRecord
 
-
 logger = logging.getLogger(__name__)
 
 

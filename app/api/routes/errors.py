@@ -6,7 +6,6 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.core.config import get_settings
 from app.workflows.error_processing import ErrorProcessingWorkflow
 
-
 router = APIRouter(tags=["errors"])
 
 

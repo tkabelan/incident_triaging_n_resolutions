@@ -18,6 +18,8 @@ Provides-Extra: dev
 Requires-Dist: pytest<9.0,>=8.3; extra == "dev"
 Requires-Dist: pytest-cov<6.0,>=5.0; extra == "dev"
 Requires-Dist: httpx<1.0,>=0.27; extra == "dev"
+Requires-Dist: black<25.0,>=24.8; extra == "dev"
+Requires-Dist: isort<6.0,>=5.13; extra == "dev"
 Requires-Dist: ruff<1.0,>=0.6; extra == "dev"
 
 # Incident Management and Resolution Platform Specification

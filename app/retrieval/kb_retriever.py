@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
-import hashlib
 from pathlib import Path
 from typing import Any
 
@@ -13,7 +13,6 @@ from app.schemas.processed_errors import (
     KnowledgeBaseEntry,
     ProcessedErrorRecord,
 )
-
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +34,7 @@ class KnowledgeBaseRetriever:
     @classmethod
     def from_settings(cls, settings: Any) -> "KnowledgeBaseRetriever":
         from langchain_chroma import Chroma
+
         embeddings = _build_embeddings(settings)
         vector_store = Chroma(
             collection_name=settings.vector_store.collection_name,
@@ -81,7 +81,9 @@ class KnowledgeBaseRetriever:
             )
             for document, score in search_results
         ]
-        logger.info("Retrieved %s grounding entries for raw error %s", len(evidence), processed_error.row_id)
+        logger.info(
+            "Retrieved %s grounding entries for raw error %s", len(evidence), processed_error.row_id
+        )
         return evidence
 
     def get_direct_match(self, evidence: list[GroundingEvidence]) -> GroundingEvidence | None:
@@ -207,6 +209,7 @@ def _build_embeddings(settings: Any) -> Any:
         return LocalHashEmbeddings(dimensions=settings.models.embedding_dimensions)
     if provider == "openai":
         import os
+
         from langchain_openai import OpenAIEmbeddings
 
         return OpenAIEmbeddings(

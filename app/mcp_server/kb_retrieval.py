@@ -6,7 +6,6 @@ from typing import Any
 from app.retrieval.kb_retriever import KnowledgeBaseRetriever
 from app.schemas.processed_errors import KbRetrievalResponse, ProcessedErrorRecord
 
-
 KB_RETRIEVAL_TOOL = "kb.retrieve"
 
 

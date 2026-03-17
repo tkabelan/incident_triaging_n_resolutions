@@ -5,7 +5,6 @@ from typing import Any
 
 from app.search.tavily_search import TavilySearchService
 
-
 WEB_SEARCH_TOOL = "search.web"
 
 

@@ -13,7 +13,6 @@ from app.schemas.processed_errors import (
     VerificationResult,
 )
 
-
 logger = logging.getLogger(__name__)
 
 

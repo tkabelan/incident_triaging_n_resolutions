@@ -7,7 +7,6 @@ from app.core.config import get_settings
 from app.logging_config import init_logging
 from app.workflows.error_processing import ErrorProcessingWorkflow
 
-
 DEFAULT_ERROR_TEXT = """[CANNOT_OPEN_SOCKET] Can not open socket]"""
 
 

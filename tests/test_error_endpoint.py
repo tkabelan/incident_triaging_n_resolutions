@@ -22,7 +22,11 @@ class FakeWorkflow:
                 "kb_update_triggered": True,
                 "kb_update_reference": "learned-kb-id",
                 "kb_update_reason": "Verification passed and policy allows writing verified answers back to KB.",
-                "steps": ["raw_ingestion_completed", "verification_completed", "kb_update_completed"],
+                "steps": [
+                    "raw_ingestion_completed",
+                    "verification_completed",
+                    "kb_update_completed",
+                ],
                 "stages": {
                     "chroma_db": {"status": "pass", "direct_match": False, "evidence_count": 1},
                     "planner": {"status": "pass", "next_action": "kb_update"},

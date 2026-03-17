@@ -6,9 +6,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
 from dotenv import load_dotenv
-
+from pydantic import BaseModel, ConfigDict
 
 DEFAULT_CONFIG_PATH = Path("config/config.json")
 CONFIG_ENV_VAR = "INCIDENT_APP_CONFIG"

@@ -36,7 +36,11 @@ def classify_taxonomy(error_prefix: str, error_summary: str) -> TaxonomyResult:
             retryable=True,
             resolution_type="path_fix",
         )
-    if "concurrentappendexception" in text or "conflicting commit" in text or "concurrency control" in text:
+    if (
+        "concurrentappendexception" in text
+        or "conflicting commit" in text
+        or "concurrency control" in text
+    ):
         return TaxonomyResult(
             error_type="concurrency_conflict",
             exception_type="ConcurrentAppendException",

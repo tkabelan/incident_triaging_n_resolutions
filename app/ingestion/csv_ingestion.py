@@ -6,7 +6,6 @@ from pathlib import Path
 
 from app.schemas.error_records import RawErrorRecord
 
-
 logger = logging.getLogger(__name__)
 
 MAX_ERROR_RECORDS = 3
@@ -41,9 +40,7 @@ class CsvErrorIngestionService:
                         )
                     )
                 except Exception as exc:
-                    logger.warning(
-                        "Skipping malformed CSV row %s in %s: %s", index, path.name, exc
-                    )
+                    logger.warning("Skipping malformed CSV row %s in %s: %s", index, path.name, exc)
         logger.info(
             "Loaded %s raw error records from %s using the first %s rows",
             len(records),

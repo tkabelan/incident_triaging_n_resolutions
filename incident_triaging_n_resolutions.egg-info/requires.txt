@@ -13,4 +13,6 @@ tavily-python<0.6,>=0.5
 pytest<9.0,>=8.3
 pytest-cov<6.0,>=5.0
 httpx<1.0,>=0.27
+black<25.0,>=24.8
+isort<6.0,>=5.13
 ruff<1.0,>=0.6

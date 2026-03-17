@@ -17,7 +17,6 @@ from app.schemas.processed_errors import (
     WebSearchResult,
 )
 
-
 logger = logging.getLogger(__name__)
 
 

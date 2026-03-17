@@ -4,12 +4,8 @@ import logging
 from collections.abc import Callable
 from typing import Any
 
-from app.schemas.error_records import (
-    RawErrorIngestionRequest,
-    RawErrorIngestionResponse,
-)
+from app.schemas.error_records import RawErrorIngestionRequest, RawErrorIngestionResponse
 from app.storage.raw_error_storage import RawErrorStorageService
-
 
 logger = logging.getLogger(__name__)
 

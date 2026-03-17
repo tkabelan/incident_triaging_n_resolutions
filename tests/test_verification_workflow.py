@@ -107,7 +107,9 @@ class FakeNormalizer:
 
 
 class FakeRetriever:
-    def upsert_verified_resolution(self, _processed_error, _classification, memory_signals=None) -> str:
+    def upsert_verified_resolution(
+        self, _processed_error, _classification, memory_signals=None
+    ) -> str:
         return "learned-kb-id"
 
 
@@ -121,7 +123,9 @@ class FakeClassifier:
             evidence=[],
         )
 
-    def refine_with_web_search(self, _processed_error: ProcessedErrorRecord, _evidence, _web_results):
+    def refine_with_web_search(
+        self, _processed_error: ProcessedErrorRecord, _evidence, _web_results
+    ):
         return ClassificationResolutionResult(
             category="access_denied",
             confidence=0.87,

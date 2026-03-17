@@ -23,7 +23,10 @@ def test_error_normalizer_creates_processed_record(tmp_path) -> None:
     assert processed.exception_type == "AccessDeniedException"
     assert processed.service_hint == "s3"
     assert processed.raw_storage_reference == str(raw_path)
-    assert "forbidden" in processed.error_summary.lower() or "valueerror" in processed.error_summary.lower()
+    assert (
+        "forbidden" in processed.error_summary.lower()
+        or "valueerror" in processed.error_summary.lower()
+    )
     assert storage_reference.endswith("error_prefix_counts.csv-1.json")
 
 

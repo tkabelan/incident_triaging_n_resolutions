@@ -12,7 +12,6 @@ from app.schemas.processed_errors import (
     WebSearchResult,
 )
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -80,7 +79,9 @@ class PrimaryClassificationService:
     ) -> ClassificationResolutionResult:
         draft = self._invoke(
             processed_error=processed_error,
-            evidence_text=_format_evidence(evidence) + "\n\nExternal web evidence:\n" + _format_web_results(web_results),
+            evidence_text=_format_evidence(evidence)
+            + "\n\nExternal web evidence:\n"
+            + _format_web_results(web_results),
             reflection_note=reflection_note,
         )
         logger.info(

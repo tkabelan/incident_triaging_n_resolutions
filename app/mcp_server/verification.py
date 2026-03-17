@@ -7,10 +7,8 @@ from app.schemas.processed_errors import (
     ClassificationResolutionResult,
     GroundingEvidence,
     ProcessedErrorRecord,
-    VerificationResult,
 )
 from app.verification.service import VerificationService
-
 
 VERIFICATION_TOOL = "verification.verify_resolution"
 
