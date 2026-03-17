@@ -54,7 +54,7 @@ The next scope is to turn it into a fully agentic app:
 - [x] Task 3.7: Add a human-review exit path
 - [x] Task 3.8: Expand KB memory and learning signals
 - [x] Task 3.9: Add frontend-friendly agent trace output
-- [ ] Task 3.10: Add single-error FastAPI endpoint
+- [x] Task 3.10: Add single-error FastAPI endpoint
 
 ## Implemented Files
 
@@ -132,6 +132,12 @@ The next scope is to turn it into a fully agentic app:
 - Canonical agent trace builder: [app/workflows/state.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/workflows/state.py)
 - Single-error trace output: [app/run_single_error.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/run_single_error.py)
 
+### Interactive API
+
+- FastAPI single-error route: [app/api/routes/errors.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/api/routes/errors.py)
+- FastAPI app registration: [app/api/app.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/api/app.py)
+- Local frontend plan: [docs/frontend-plan.md](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/docs/frontend-plan.md)
+
 ### MCP Retrieval
 
 - MCP KB retrieval handler: [app/mcp_server/kb_retrieval.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/mcp_server/kb_retrieval.py)
@@ -150,6 +156,7 @@ The next scope is to turn it into a fully agentic app:
 - Retry and human-review tests: [tests/test_workflow_retry_and_review.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/tests/test_workflow_retry_and_review.py)
 - Agent trace tests: [tests/test_agent_trace.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/tests/test_agent_trace.py)
 - Workflow state tests: [tests/test_workflow_state.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/tests/test_workflow_state.py)
+- Error endpoint tests: [tests/test_error_endpoint.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/tests/test_error_endpoint.py)
 
 ## Workflow Map
 
@@ -218,7 +225,7 @@ The next implementation target is to make the app fully agentic.
 
 Immediate next tasks:
 
-- Task 3.10: Add single-error FastAPI endpoint
+- Build the local React frontend using [docs/frontend-plan.md](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/docs/frontend-plan.md)
 
 Expected result:
 
@@ -230,7 +237,7 @@ Expected result:
 - the graph now supports reflection-based retries and a safe human-review terminal state
 - verified outcomes now write richer memory signals back into the KB
 - the workflow now returns a stable agent trace contract for frontend use
-- the next step is to expose the single-error flow through FastAPI
+- the single-error flow is now exposed through FastAPI for frontend integration
 
 ## Canonical References
 

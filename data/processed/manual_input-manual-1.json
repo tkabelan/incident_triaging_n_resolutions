@@ -3,15 +3,13 @@
   "source_file": "manual_input",
   "raw_storage_reference": "data/raw/manual_input-manual-1.json",
   "error_prefix": "[CANNOT_OPEN_SOCKET]",
-  "error_summary": "[CANNOT_OPEN_SOCKET] Can not open socket]",
+  "error_summary": "[CANNOT_OPEN_SOCKET] Connection refused",
   "normalized_prefix": "[cannot_open_socket]",
   "category_hint": "[cannot_open_socket]",
   "keywords": [
     "cannot_open_socket",
-    "can",
-    "not",
-    "open",
-    "socket"
+    "connection",
+    "refused"
   ],
   "error_type": "unknown",
   "exception_type": "[CANNOT_OPEN_SOCKET]",

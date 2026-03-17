@@ -1,6 +1,6 @@
 {
   "row_id": "manual-1",
   "error_prefix": "[CANNOT_OPEN_SOCKET]",
-  "error_message": "[CANNOT_OPEN_SOCKET] Can not open socket]",
+  "error_message": "[CANNOT_OPEN_SOCKET] Connection refused",
   "source_file": "manual_input"
 }

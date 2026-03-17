@@ -1,0 +1,26 @@
+.DS_Store
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Virtual environments
+.venv/
+.venv311/
+venv/
+
+# Python cache/build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Local runtime data
+data/chroma/
+data/raw/
+data/processed/
+
+# Test and local tool outputs
+.coverage
+htmlcov/
