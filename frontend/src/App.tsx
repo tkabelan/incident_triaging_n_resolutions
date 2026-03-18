@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 import { processErrorStream, ProcessErrorApiError } from "./api/processError";
 import type {
@@ -38,6 +38,13 @@ type FriendlyStep = {
   icon: string;
   title: string;
   description: string;
+};
+
+type LiveStep = {
+  stage: string;
+  title: string;
+  description: string;
+  status: "running" | "complete" | "failed";
 };
 
 function toTitleCase(value: string) {
@@ -161,7 +168,21 @@ function App() {
   const [result, setResult] = useState<ProcessErrorResponse | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [liveSteps, setLiveSteps] = useState<ProcessProgressEvent[]>([]);
+  const [liveSteps, setLiveSteps] = useState<LiveStep[]>([]);
+  const [dotCount, setDotCount] = useState(1);
+
+  useEffect(() => {
+    if (!isSubmitting) {
+      setDotCount(1);
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setDotCount((current) => (current >= 5 ? 1 : current + 1));
+    }, 350);
+
+    return () => window.clearInterval(intervalId);
+  }, [isSubmitting]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -179,14 +200,37 @@ function App() {
     try {
       await processErrorStream({ error_text: trimmed }, (event: ProcessStreamEvent) => {
         if (event.type === "progress") {
-          setLiveSteps((current) => [...current, event]);
+          setLiveSteps((current) => {
+            const completed = current.map((step) =>
+              step.status === "running" ? { ...step, status: "complete" as const } : step,
+            );
+            return [
+              ...completed,
+              {
+                stage: event.stage,
+                title: event.title,
+                description: event.description,
+                status: event.status === "failed" ? "failed" : "running",
+              },
+            ];
+          });
           return;
         }
         if (event.type === "result") {
+          setLiveSteps((current) =>
+            current.map((step) =>
+              step.status === "running" ? { ...step, status: "complete" as const } : step,
+            ),
+          );
           setResult(event.payload);
           return;
         }
         if (event.type === "error") {
+          setLiveSteps((current) =>
+            current.map((step) =>
+              step.status === "running" ? { ...step, status: "failed" as const } : step,
+            ),
+          );
           setRequestError(event.payload.message);
         }
       });
@@ -254,29 +298,33 @@ function App() {
           <div className="friendly-steps">
             {liveSteps.length > 0 ? (
               liveSteps.map((step, index) => (
-                <article
-                  key={`${step.stage}-${index}`}
-                  className={`friendly-step-card friendly-step-${step.status}`}
-                >
-                  <div className="friendly-step-icon" aria-hidden="true">
-                    {step.title.split(" ")[0]}
+                <div key={`${step.stage}-${index}`} className="progress-row">
+                  <div className="progress-copy">
+                    <span>
+                      <strong>{step.title}</strong>
+                      {" - "}
+                      {step.description}
+                    </span>
                   </div>
-                  <div>
-                    <h3>{step.title}</h3>
-                    <p>{step.description}</p>
-                  </div>
-                </article>
+                  <span className={`progress-state progress-${step.status}`}>
+                    {step.status === "running"
+                      ? ".".repeat(dotCount)
+                      : step.status === "failed"
+                        ? "fail"
+                        : "✅"}
+                  </span>
+                </div>
               ))
             ) : (
-              <article className="friendly-step-card">
-                <div className="friendly-step-icon" aria-hidden="true">
-                  ⏳
+              <div className="progress-row">
+                <div className="progress-copy">
+                  <span>
+                    <strong>Starting the workflow</strong>
+                    {" - "}The backend has accepted the request and is beginning the agent run.
+                  </span>
                 </div>
-                <div>
-                  <h3>Starting the workflow</h3>
-                  <p>The backend has accepted the request and is beginning the agent run.</p>
-                </div>
-              </article>
+                <span className="progress-state progress-running">{".".repeat(dotCount)}</span>
+              </div>
             )}
           </div>
         </section>
@@ -338,15 +386,18 @@ function App() {
 
             <div className="friendly-steps">
               {buildFriendlySteps(result).map((step, index) => (
-                <article key={`${step.title}-${index}`} className="friendly-step-card">
-                  <div className="friendly-step-icon" aria-hidden="true">
-                    {step.icon}
+                <div key={`${step.title}-${index}`} className="progress-row final-progress-row">
+                  <div className="progress-copy">
+                    <span>
+                      <strong>
+                        {step.icon} {step.title}
+                      </strong>
+                      {" - "}
+                      {step.description}
+                    </span>
                   </div>
-                  <div>
-                    <h3>{step.title}</h3>
-                    <p>{step.description}</p>
-                  </div>
-                </article>
+                  <span className="progress-state progress-complete">✅</span>
+                </div>
               ))}
             </div>
           </section>
