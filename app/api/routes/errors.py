@@ -20,6 +20,10 @@ class SingleErrorRequest(BaseModel):
     error_text: str = Field(min_length=1, description="The full error text to process.")
     row_id: str = Field(default="manual-1")
     source_file: str = Field(default="manual_input")
+    force_web_search: bool = Field(
+        default=False,
+        description="If true, run web search even when verification would otherwise allow stopping.",
+    )
 
 
 class SingleErrorResponse(BaseModel):
@@ -45,6 +49,7 @@ def process_single_error(request: SingleErrorRequest) -> SingleErrorResponse:
         request.error_text,
         row_id=request.row_id,
         source_file=request.source_file,
+        force_web_search=request.force_web_search,
     )
     return SingleErrorResponse(
         row_id=result["row_id"],
@@ -71,6 +76,7 @@ def process_single_error_stream(request: SingleErrorRequest) -> StreamingRespons
                 request.error_text,
                 row_id=request.row_id,
                 source_file=request.source_file,
+                force_web_search=request.force_web_search,
                 progress_callback=publish,
             )
             event_queue.put({"type": "result", "payload": result})

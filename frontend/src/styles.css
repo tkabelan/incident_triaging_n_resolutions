@@ -78,6 +78,27 @@ pre {
   gap: 16px;
 }
 
+.preference-card {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border: 1px solid rgba(31, 122, 88, 0.16);
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(235, 249, 226, 0.96), rgba(248, 252, 245, 0.96));
+}
+
+.preference-copy h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.preference-copy p:last-child {
+  margin: 8px 0 0;
+  color: #365246;
+}
+
 .field-label {
   font-weight: 600;
 }
@@ -105,6 +126,25 @@ pre {
   gap: 16px;
   align-items: center;
   justify-content: space-between;
+}
+
+.checkbox-row {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #24463a;
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgba(16, 33, 27, 0.06);
+}
+
+.checkbox-row input {
+  width: 16px;
+  height: 16px;
+  accent-color: #1f7a58;
 }
 
 .submit-button {
@@ -249,7 +289,15 @@ pre {
 }
 
 .progress-running {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 112px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(31, 122, 88, 0.12);
   color: #1f7a58;
+  animation: softPulse 1.4s ease-in-out infinite;
 }
 
 .progress-complete {
@@ -519,6 +567,23 @@ pre {
   }
 }
 
+@keyframes softPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(31, 122, 88, 0.18);
+    background: rgba(31, 122, 88, 0.12);
+  }
+
+  50% {
+    box-shadow: 0 0 0 8px rgba(31, 122, 88, 0.03);
+    background: rgba(31, 122, 88, 0.18);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(31, 122, 88, 0.18);
+    background: rgba(31, 122, 88, 0.12);
+  }
+}
+
 @media (max-width: 720px) {
   .app-shell {
     width: min(100% - 20px, 1080px);
@@ -546,6 +611,7 @@ pre {
   }
 
   .actions,
+  .preference-card,
   .result-header,
   .timeline-header,
   .timeline-card-header,

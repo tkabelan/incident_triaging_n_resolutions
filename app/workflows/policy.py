@@ -82,9 +82,15 @@ class WorkflowPolicy:
         verification: VerificationResult | None,
         *,
         search_enabled: bool,
+        force_web_search: bool = False,
     ) -> PolicyDecision:
         if verification is None:
             return PolicyDecision("end", "Verification result is missing.")
+        if search_enabled and force_web_search:
+            return PolicyDecision(
+                action="web_search",
+                reason="User requested web evidence even though verification completed successfully.",
+            )
         if (
             verification.passed
             and verification.confidence >= self.verification_confidence_threshold

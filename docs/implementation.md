@@ -6,15 +6,14 @@
 
 The backend agentic phase is complete.
 
-The next scope is a simple local React frontend that uses the existing FastAPI endpoint:
+The agentic backend and the first frontend MVP are complete.
 
-1. Create the frontend app scaffold
-2. Add a typed API client for the single-error endpoint
-3. Build the input and submit flow
-4. Build the readable outcome summary
-5. Build the agent steps timeline
-6. Build score, evidence, and KB panels
-7. Add simple UX polish for local demo use
+The current scope is refinement and hardening of the local demo experience:
+
+1. Stream live progress to the frontend while the backend is still running
+2. Keep the walkthrough compact and readable for non-technical users
+3. Support a frontend-controlled forced web-search mode
+4. Continue local UX refinement based on real usage
 
 ## Status
 
@@ -59,6 +58,8 @@ The next scope is a simple local React frontend that uses the existing FastAPI e
 - [x] Task 4.5: Build the agent steps timeline
 - [x] Task 4.6: Build score, evidence, and KB panels
 - [x] Task 4.7: Add simple UX polish for local demo use
+- [x] Task 4.8: Stream live reasoning progress to the frontend
+- [x] Task 4.9: Add a frontend-controlled forced web-search option
 
 ## Implemented Files
 
@@ -155,6 +156,7 @@ The next scope is a simple local React frontend that uses the existing FastAPI e
 - Frontend styles: [frontend/src/styles.css](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/frontend/src/styles.css)
 - Streaming progress endpoint: [app/api/routes/errors.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/api/routes/errors.py)
 - Workflow progress events: [app/workflows/error_processing.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/workflows/error_processing.py)
+- Frontend-controlled forced web-search flow: [frontend/src/App.tsx](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/frontend/src/App.tsx), [app/workflows/policy.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/workflows/policy.py), [app/api/routes/errors.py](/Users/theivendrankabelan/Documents/python_scripts/incident_triaging_n_resolutions/app/api/routes/errors.py)
 
 ### MCP Retrieval
 
@@ -239,13 +241,13 @@ Current implemented workflow shape:
 
 ## Next Task
 
-The next implementation target is the next frontend rendering slice.
+The next implementation target is refinement rather than a new major feature phase.
 
 Immediate next tasks:
 
-- Run the frontend locally against the FastAPI backend
-- Refine any UI issues found in local testing
-- Replace remaining placeholder text where real agent data is now available
+- Run the frontend locally against the FastAPI backend and polish UX details
+- Add tests for the streaming endpoint and forced web-search path
+- Harden the API response surface for shared or production-like environments
 
 Expected result:
 
@@ -255,6 +257,7 @@ Expected result:
 - stage status, confidence, web evidence, and KB update information are visible to non-technical users
 - the local demo flow is complete from text input to structured readable result
 - the frontend now streams short user-friendly step updates while the backend is still processing
+- users can explicitly request web evidence from the frontend even when verification already passed
 
 ## Canonical References
 

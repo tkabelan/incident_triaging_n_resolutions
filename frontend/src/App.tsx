@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 import { processErrorStream, ProcessErrorApiError } from "./api/processError";
 import type {
@@ -165,28 +165,31 @@ function buildFriendlySteps(result: ProcessErrorResponse): FriendlyStep[] {
 
 function App() {
   const [errorText, setErrorText] = useState(DEFAULT_ERROR);
+  const [forceWebSearch, setForceWebSearch] = useState(false);
   const [result, setResult] = useState<ProcessErrorResponse | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [liveSteps, setLiveSteps] = useState<LiveStep[]>([]);
-  const [dotCount, setDotCount] = useState(1);
+  const liveStepsContainerRef = useRef<HTMLDivElement | null>(null);
+  const activeStepRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!isSubmitting) {
-      setDotCount(1);
+    if (!isSubmitting || !liveStepsContainerRef.current || !activeStepRef.current) {
       return;
     }
 
-    const intervalId = window.setInterval(() => {
-      setDotCount((current) => (current >= 5 ? 1 : current + 1));
-    }, 350);
+    const container = liveStepsContainerRef.current;
+    const activeStep = activeStepRef.current;
+    const targetTop =
+      activeStep.offsetTop - container.clientHeight / 2 + activeStep.clientHeight / 2;
 
-    return () => window.clearInterval(intervalId);
-  }, [isSubmitting]);
+    container.scrollTo({
+      top: Math.max(0, targetTop),
+      behavior: "smooth",
+    });
+  }, [isSubmitting, liveSteps]);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  async function startAnalysis(forceSearchOverride?: boolean) {
     const trimmed = errorText.trim();
     if (!trimmed || isSubmitting) {
       return;
@@ -198,42 +201,48 @@ function App() {
     setLiveSteps([]);
 
     try {
-      await processErrorStream({ error_text: trimmed }, (event: ProcessStreamEvent) => {
-        if (event.type === "progress") {
-          setLiveSteps((current) => {
-            const completed = current.map((step) =>
-              step.status === "running" ? { ...step, status: "complete" as const } : step,
+      await processErrorStream(
+        {
+          error_text: trimmed,
+          force_web_search: forceSearchOverride ?? forceWebSearch,
+        },
+        (event: ProcessStreamEvent) => {
+          if (event.type === "progress") {
+            setLiveSteps((current) => {
+              const completed = current.map((step) =>
+                step.status === "running" ? { ...step, status: "complete" as const } : step,
+              );
+              return [
+                ...completed,
+                {
+                  stage: event.stage,
+                  title: event.title,
+                  description: event.description,
+                  status: event.status === "failed" ? "failed" : "running",
+                },
+              ];
+            });
+            return;
+          }
+          if (event.type === "result") {
+            setLiveSteps((current) =>
+              current.map((step) =>
+                step.status === "running" ? { ...step, status: "complete" as const } : step,
+              ),
             );
-            return [
-              ...completed,
-              {
-                stage: event.stage,
-                title: event.title,
-                description: event.description,
-                status: event.status === "failed" ? "failed" : "running",
-              },
-            ];
-          });
-          return;
-        }
-        if (event.type === "result") {
-          setLiveSteps((current) =>
-            current.map((step) =>
-              step.status === "running" ? { ...step, status: "complete" as const } : step,
-            ),
-          );
-          setResult(event.payload);
-          return;
-        }
-        if (event.type === "error") {
-          setLiveSteps((current) =>
-            current.map((step) =>
-              step.status === "running" ? { ...step, status: "failed" as const } : step,
-            ),
-          );
-          setRequestError(event.payload.message);
-        }
-      });
+            setResult(event.payload);
+            return;
+          }
+          if (event.type === "error") {
+            setLiveSteps((current) =>
+              current.map((step) =>
+                step.status === "running" ? { ...step, status: "failed" as const } : step,
+              ),
+            );
+            setRequestError(event.payload.message);
+          }
+        },
+      );
     } catch (error) {
       if (error instanceof ProcessErrorApiError) {
         setRequestError(`${error.message} (HTTP ${error.status})`);
@@ -245,6 +254,11 @@ function App() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await startAnalysis();
   }
 
   return (
@@ -272,6 +286,26 @@ function App() {
             placeholder="Paste one error message here"
           />
 
+          <div className="preference-card">
+            <div className="preference-copy">
+              <p className="section-label">Optional evidence mode</p>
+              <h3>Always run web search</h3>
+              <p>
+                Use this when non-experts want plain external references even if the model already
+                verified the answer.
+              </p>
+            </div>
+            <label className="checkbox-row" htmlFor="forceWebSearch">
+              <input
+                id="forceWebSearch"
+                type="checkbox"
+                checked={forceWebSearch}
+                onChange={(event) => setForceWebSearch(event.target.checked)}
+              />
+              <span>Enable forced web search</span>
+            </label>
+          </div>
+
           <div className="actions">
             <button className="submit-button" type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Analyzing..." : "Analyze Error"}
@@ -295,10 +329,14 @@ function App() {
             </p>
           </div>
 
-          <div className="friendly-steps">
+          <div className="friendly-steps" ref={liveStepsContainerRef}>
             {liveSteps.length > 0 ? (
               liveSteps.map((step, index) => (
-                <div key={`${step.stage}-${index}`} className="progress-row">
+                <div
+                  key={`${step.stage}-${index}`}
+                  ref={step.status === "running" ? activeStepRef : null}
+                  className="progress-row"
+                >
                   <div className="progress-copy">
                     <span>
                       <strong>{step.title}</strong>
@@ -308,7 +346,7 @@ function App() {
                   </div>
                   <span className={`progress-state progress-${step.status}`}>
                     {step.status === "running"
-                      ? ".".repeat(dotCount)
+                      ? "In progress"
                       : step.status === "failed"
                         ? "fail"
                         : "✅"}
@@ -323,7 +361,7 @@ function App() {
                     {" - "}The backend has accepted the request and is beginning the agent run.
                   </span>
                 </div>
-                <span className="progress-state progress-running">{".".repeat(dotCount)}</span>
+                <span className="progress-state progress-running">In progress</span>
               </div>
             )}
           </div>

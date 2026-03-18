@@ -68,6 +68,7 @@ class ErrorProcessingWorkflow:
         *,
         row_id: str = "manual-1",
         source_file: str = "manual_input",
+        force_web_search: bool = False,
         progress_callback: Callable[[dict[str, Any]], None] | None = None,
     ) -> dict[str, Any]:
         logger.info("Starting end-to-end processing for a single manual error")
@@ -77,12 +78,17 @@ class ErrorProcessingWorkflow:
             error_message=error_text,
             source_file=source_file,
         )
-        return self._process_one_error(raw_record, progress_callback=progress_callback)
+        return self._process_one_error(
+            raw_record,
+            progress_callback=progress_callback,
+            force_web_search=force_web_search,
+        )
 
     def _process_one_error(
         self,
         raw_record: Any,
         progress_callback: Callable[[dict[str, Any]], None] | None = None,
+        force_web_search: bool = False,
     ) -> dict[str, Any]:
         self._progress_callback = progress_callback
         try:
@@ -91,7 +97,9 @@ class ErrorProcessingWorkflow:
                 description="The agent accepted the input and is preparing the workflow.",
                 stage="input",
             )
-            final_state = self._graph.invoke(new_graph_state(raw_record))
+            final_state = self._graph.invoke(
+                new_graph_state(raw_record, force_web_search=force_web_search)
+            )
         except Exception as exc:
             logger.exception("Failed processing error row %s", raw_record.row_id)
             final_state = new_graph_state(raw_record)
@@ -555,6 +563,7 @@ class ErrorProcessingWorkflow:
             decision = self._policy.decide_after_verification(
                 state.get("verification_result"),
                 search_enabled=self._is_search_enabled(),
+                force_web_search=state.get("force_web_search", False),
             )
             if decision.action == "verification_failed":
                 terminal = self._policy.decide_after_verification_terminal_failure()

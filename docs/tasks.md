@@ -854,3 +854,35 @@ Acceptance criteria:
 Test in isolation:
 
 - Manually verify success, loading, error, and human-review states.
+
+### Task 4.8: Stream live reasoning progress to the frontend
+
+Scope:
+
+- Stream short user-friendly progress steps from the backend while the workflow is still running.
+- Keep the progress view compact and readable.
+
+Acceptance criteria:
+
+- Users can see the current step before the final answer arrives.
+- The current active step stays visible in the walkthrough panel.
+
+Test in isolation:
+
+- Run one error and verify that progress updates appear live before the final result.
+
+### Task 4.9: Add a frontend-controlled forced web-search option
+
+Scope:
+
+- Add a visible frontend option to force web search even when verification has already passed.
+- Keep this as a user experience choice exposed in the UI.
+
+Acceptance criteria:
+
+- A user can request external evidence on demand.
+- The workflow still completes normally but includes web evidence when the option is enabled.
+
+Test in isolation:
+
+- Run one error with the option disabled and enabled, then compare the web-search path.

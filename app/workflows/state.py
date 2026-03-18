@@ -33,6 +33,7 @@ class StageDetail(TypedDict, total=False):
 class AgentWorkflowState(TypedDict, total=False):
     row_id: str
     source_file: str
+    force_web_search: bool
     raw_record: RawErrorRecord
     raw_storage_reference: str | None
     processed_storage_reference: str | None
@@ -82,6 +83,7 @@ class AgentWorkflowStateModel(BaseModel):
 
     row_id: str
     source_file: str
+    force_web_search: bool = False
     raw_record: RawErrorRecord
     raw_storage_reference: str | None = None
     processed_storage_reference: str | None = None
@@ -109,10 +111,13 @@ class AgentWorkflowStateModel(BaseModel):
     error: dict[str, Any] | None = None
 
     @classmethod
-    def create(cls, raw_record: RawErrorRecord) -> "AgentWorkflowStateModel":
+    def create(
+        cls, raw_record: RawErrorRecord, *, force_web_search: bool = False
+    ) -> "AgentWorkflowStateModel":
         return cls(
             row_id=raw_record.row_id,
             source_file=raw_record.source_file,
+            force_web_search=force_web_search,
             raw_record=raw_record,
             stage_details=default_stage_detail_models(),
         )
@@ -130,6 +135,7 @@ class AgentWorkflowStateModel(BaseModel):
         return {
             "row_id": self.row_id,
             "source_file": self.source_file,
+            "force_web_search": self.force_web_search,
             "raw_record": self.raw_record,
             "raw_storage_reference": self.raw_storage_reference,
             "processed_storage_reference": self.processed_storage_reference,
@@ -305,8 +311,12 @@ def default_stage_detail_models() -> dict[str, StageDetailModel]:
     }
 
 
-def new_graph_state(raw_record: RawErrorRecord) -> AgentWorkflowState:
-    return AgentWorkflowStateModel.create(raw_record).to_graph_state()
+def new_graph_state(
+    raw_record: RawErrorRecord, *, force_web_search: bool = False
+) -> AgentWorkflowState:
+    return AgentWorkflowStateModel.create(
+        raw_record, force_web_search=force_web_search
+    ).to_graph_state()
 
 
 def clone_graph_state(state: AgentWorkflowState) -> AgentWorkflowState:

@@ -49,6 +49,7 @@ export type ProcessErrorRequest = {
   error_text: string;
   row_id?: string;
   source_file?: string;
+  force_web_search?: boolean;
 };
 
 export type ProcessErrorResponse = {
