@@ -32,6 +32,7 @@ class SingleErrorResponse(BaseModel):
     row_id: str
     status: str
     agent_trace: dict
+    models: dict[str, str] | None = None
     classification: dict | None = None
     verification: dict | None = None
     kb_update_reference: str | None = None
@@ -44,7 +45,8 @@ def _sse_payload(event: dict) -> str:
 
 @router.post("/errors/process", response_model=SingleErrorResponse)
 def process_single_error(request: SingleErrorRequest) -> SingleErrorResponse:
-    workflow = ErrorProcessingWorkflow(get_settings())
+    settings = get_settings()
+    workflow = ErrorProcessingWorkflow(settings)
     result = workflow.run_single_error(
         request.error_text,
         row_id=request.row_id,
@@ -55,6 +57,10 @@ def process_single_error(request: SingleErrorRequest) -> SingleErrorResponse:
         row_id=result["row_id"],
         status=result["status"],
         agent_trace=result["agent_trace"],
+        models={
+            "primary_classification": settings.models.primary_llm,
+            "verification": settings.models.verification_llm,
+        },
         classification=result.get("classification"),
         verification=result.get("verification"),
         kb_update_reference=result.get("kb_update_reference"),

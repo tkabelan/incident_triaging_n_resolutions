@@ -8,12 +8,13 @@ The backend agentic phase is complete.
 
 The agentic backend and the first frontend MVP are complete.
 
-The current scope is refinement and hardening of the local demo experience:
+The current scope is LangSmith observability and traceability:
 
-1. Stream live progress to the frontend while the backend is still running
-2. Keep the walkthrough compact and readable for non-technical users
-3. Support a frontend-controlled forced web-search mode
-4. Continue local UX refinement based on real usage
+1. Add LangSmith configuration and env wiring
+2. Trace LangGraph workflow runs in LangSmith
+3. Attach useful run metadata and tags
+4. Improve debugging visibility for planner, verification, and fallback branches
+5. Surface trace context in a dedicated frontend tab
 
 ## Status
 
@@ -60,6 +61,12 @@ The current scope is refinement and hardening of the local demo experience:
 - [x] Task 4.7: Add simple UX polish for local demo use
 - [x] Task 4.8: Stream live reasoning progress to the frontend
 - [x] Task 4.9: Add a frontend-controlled forced web-search option
+- [x] Task 5.1: Add LangSmith configuration
+- [x] Task 5.2: Enable LangSmith tracing for the workflow
+- [ ] Task 5.3: Add run metadata and tags
+- [ ] Task 5.4: Trace node-level decisions and failures
+- [ ] Task 5.5: Add a frontend Trace tab
+- [ ] Task 5.6: Document LangSmith local usage
 
 ## Implemented Files
 
@@ -241,23 +248,21 @@ Current implemented workflow shape:
 
 ## Next Task
 
-The next implementation target is refinement rather than a new major feature phase.
+The next implementation target is LangSmith instrumentation.
 
 Immediate next tasks:
 
-- Run the frontend locally against the FastAPI backend and polish UX details
-- Add tests for the streaming endpoint and forced web-search path
-- Harden the API response surface for shared or production-like environments
+- Task 5.1: Add LangSmith configuration
+- Task 5.2: Enable LangSmith tracing for the workflow
+- Task 5.3: Add run metadata and tags
+- Task 5.5: Add a frontend Trace tab
 
 Expected result:
 
-- a local React app can submit one error to the backend
-- the response starts in a simple page shell with loading and error handling
-- the frontend now shows a readable outcome summary and stage timeline
-- stage status, confidence, web evidence, and KB update information are visible to non-technical users
-- the local demo flow is complete from text input to structured readable result
-- the frontend now streams short user-friendly step updates while the backend is still processing
-- users can explicitly request web evidence from the frontend even when verification already passed
+- LangGraph runs are visible in LangSmith
+- LLM calls, planner branches, retries, and failures are traceable outside the local UI
+- The frontend can link the current run to its LangSmith trace context
+- developers can debug one run from LangSmith without relying only on console logs or the frontend
 
 ## Canonical References
 

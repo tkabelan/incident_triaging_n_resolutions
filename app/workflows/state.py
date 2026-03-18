@@ -21,6 +21,8 @@ class StageDetail(TypedDict, total=False):
     error: dict[str, Any] | None
     direct_match: bool
     evidence_count: int
+    top_match_score: float | None
+    direct_match_threshold: float | None
     classification: str | None
     resolution: str | None
     passed: bool | None
@@ -69,6 +71,8 @@ class StageDetailModel(BaseModel):
     error: dict[str, Any] | None = None
     direct_match: bool | None = None
     evidence_count: int | None = None
+    top_match_score: float | None = None
+    direct_match_threshold: float | None = None
     classification: str | None = None
     resolution: str | None = None
     passed: bool | None = None
@@ -268,6 +272,8 @@ class AgentWorkflowStateModel(BaseModel):
             "final_status": self.status,
             "outcome_source": self.outcome_source,
             "classification": classification.category if classification else None,
+            "main_category": classification.main_category if classification else None,
+            "subcategory": classification.subcategory if classification else None,
             "resolution": classification.proposed_resolution if classification else None,
             "branch_explanation": self._build_branch_explanation(),
             "kb_update_triggered": self.kb_update_reference is not None,

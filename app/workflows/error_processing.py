@@ -12,6 +12,7 @@ from app.ingestion.csv_ingestion import CsvErrorIngestionService
 from app.mcp_client.client import LangChainMcpClient
 from app.mcp_server.bootstrap import create_mcp_server
 from app.normalization.error_normalizer import ErrorNormalizationService
+from app.observability.langsmith import invoke_with_optional_langsmith_trace
 from app.retrieval.kb_retriever import KnowledgeBaseRetriever
 from app.schemas.error_records import RawErrorRecord
 from app.storage.processed_error_storage import ProcessedErrorStorageService
@@ -97,8 +98,11 @@ class ErrorProcessingWorkflow:
                 description="The agent accepted the input and is preparing the workflow.",
                 stage="input",
             )
-            final_state = self._graph.invoke(
-                new_graph_state(raw_record, force_web_search=force_web_search)
+            initial_state = new_graph_state(raw_record, force_web_search=force_web_search)
+            final_state = invoke_with_optional_langsmith_trace(
+                self._graph.invoke,
+                settings=self._settings,
+                initial_state=initial_state,
             )
         except Exception as exc:
             logger.exception("Failed processing error row %s", raw_record.row_id)
@@ -248,9 +252,26 @@ class ErrorProcessingWorkflow:
         updates["planner_context"] = "after_kb_retrieval"
         updates["steps"].append("kb_retrieval_completed")
         updates["stage_details"]["chroma_db"]["status"] = "pass" if retrieval.evidence else "fail"
+        top_match_score = retrieval.evidence[0].score if retrieval.evidence else None
         updates["stage_details"]["chroma_db"]["confidence"] = (
             updates["direct_match"].score if updates["direct_match"] is not None else None
         )
+        updates["stage_details"]["chroma_db"]["top_match_score"] = top_match_score
+        updates["stage_details"]["chroma_db"]["direct_match_threshold"] = (
+            self._settings.knowledge_base.direct_match_threshold
+        )
+        if retrieval.direct_match is not None:
+            updates["stage_details"]["chroma_db"]["reasoning"] = (
+                "A strong KB match met the direct-match threshold, so the workflow can reuse it."
+            )
+        elif retrieval.evidence:
+            updates["stage_details"]["chroma_db"]["reasoning"] = (
+                "ChromaDB found similar incidents, but the best match was below the direct-match threshold, so the workflow continued to the LLM."
+            )
+        else:
+            updates["stage_details"]["chroma_db"]["reasoning"] = (
+                "ChromaDB did not return matching incidents, so the workflow continued to the LLM."
+            )
         return updates
 
     def _planner_node(self, state: AgentWorkflowState) -> AgentWorkflowState:

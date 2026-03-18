@@ -24,7 +24,7 @@ def create_mcp_server(
     kb_retriever = retriever or KnowledgeBaseRetriever.from_settings(settings)
     server.register_tool(RAW_INGESTION_TOOL, create_raw_ingestion_handler(raw_storage))
     server.register_tool(KB_RETRIEVAL_TOOL, create_kb_retrieval_handler(kb_retriever))
-    if os.getenv(settings.models.openai_api_key_env_var):
+    if os.getenv(settings.models.verification_api_key_env_var):
         server.register_tool(
             VERIFICATION_TOOL,
             create_verification_handler(VerificationService.from_settings(settings)),

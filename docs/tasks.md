@@ -39,6 +39,101 @@ This document is intentionally simple for now. It is sequenced so each task can 
 9. Re-run or refine the result using the new evidence.
 10. Store the final answer and update the KB.
 
+## Phase 5: LangSmith Observability
+
+Goal:
+
+Add LangSmith tracing to the LangGraph workflow and surface useful trace information in the frontend without rebuilding the full LangSmith UI.
+
+### Task 5.1: Add LangSmith configuration and env wiring
+
+Scope:
+
+- Add config values and environment loading for LangSmith.
+- Support project name, tracing toggle, endpoint, and API key.
+
+Acceptance criteria:
+
+- LangSmith can be enabled or disabled without code changes.
+- Missing LangSmith config fails clearly only when tracing is enabled.
+
+Test in isolation:
+
+- Load valid LangSmith config and verify disabled mode works without credentials.
+
+### Task 5.2: Enable LangSmith tracing for the LangGraph workflow
+
+Scope:
+
+- Enable LangSmith tracing for the workflow, LLM calls, and graph execution.
+- Ensure single-error runs are visible as LangSmith traces.
+
+Acceptance criteria:
+
+- A workflow run appears in LangSmith with the expected parent run.
+
+Test in isolation:
+
+- Execute one single-error run and confirm a trace is created.
+
+### Task 5.3: Attach run metadata and tags
+
+Scope:
+
+- Add useful run metadata such as row id, outcome source, forced web-search flag, and branch path.
+- Add stable tags for backend, frontend, and local demo runs.
+
+Acceptance criteria:
+
+- LangSmith runs are filterable by meaningful metadata and tags.
+
+Test in isolation:
+
+- Inspect one trace and verify the expected metadata and tags are present.
+
+### Task 5.4: Trace planner decisions and failure paths
+
+Scope:
+
+- Record planner decisions, retries, reflection, human-review routing, and web-search fallbacks as traceable steps.
+
+Acceptance criteria:
+
+- Planner branches and failure reasons are visible in LangSmith without reading local logs.
+
+Test in isolation:
+
+- Trigger one success path and one failure path and verify both are traceable.
+
+### Task 5.5: Add a frontend Trace tab
+
+Scope:
+
+- Add a new frontend tab that shows LangSmith-linked trace data for the current run.
+- Include run id, project, tags, branch path, and an external link to open the LangSmith run.
+
+Acceptance criteria:
+
+- A user can inspect trace context from the UI without reading raw JSON.
+
+Test in isolation:
+
+- Run one error from the UI and verify the Trace tab renders the expected data.
+
+### Task 5.6: Document LangSmith local usage
+
+Scope:
+
+- Add README guidance for local LangSmith setup, env vars, and how to inspect traces.
+
+Acceptance criteria:
+
+- A developer can enable LangSmith locally and verify one trace without extra guesswork.
+
+Test in isolation:
+
+- Follow the README steps from a clean shell and confirm tracing works.
+
 ## Phase 1: Project Initialization and Core Structure
 
 Goal:
@@ -886,3 +981,84 @@ Acceptance criteria:
 Test in isolation:
 
 - Run one error with the option disabled and enabled, then compare the web-search path.
+
+## Phase 5: LangSmith Observability
+
+Goal:
+
+Instrument the LangGraph workflow with LangSmith so runs, node transitions, prompts, errors, and traces can be inspected and debugged outside the local UI.
+
+### Task 5.1: Add LangSmith configuration
+
+Scope:
+
+- Add config and env support for LangSmith keys, project name, and tracing enablement.
+- Keep tracing configurable per environment.
+
+Acceptance criteria:
+
+- LangSmith can be enabled or disabled without code changes.
+
+Test in isolation:
+
+- Load settings with tracing enabled and disabled.
+
+### Task 5.2: Enable LangSmith tracing for the workflow
+
+Scope:
+
+- Wire LangSmith tracing into the LangGraph workflow and LLM calls.
+- Ensure a single error run appears as one inspectable trace.
+
+Acceptance criteria:
+
+- A workflow run is visible in LangSmith with useful metadata.
+
+Test in isolation:
+
+- Run one error and verify the trace appears in LangSmith.
+
+### Task 5.3: Add run metadata and tags
+
+Scope:
+
+- Attach useful metadata such as row id, source file, outcome source, retry count, KB hit status, and forced web-search mode.
+- Add tags for key run types.
+
+Acceptance criteria:
+
+- LangSmith runs are searchable and filterable by business-relevant attributes.
+
+Test in isolation:
+
+- Run sample flows and verify metadata and tags are present.
+
+### Task 5.4: Trace node-level decisions and failures
+
+Scope:
+
+- Capture planner decisions, verification outcomes, fallback search triggers, and human-review exits in traceable form.
+- Make failures easy to inspect in LangSmith.
+
+Acceptance criteria:
+
+- LangSmith shows enough context to explain why the graph took each branch.
+
+Test in isolation:
+
+- Trigger verified, web-search, and human-review paths and inspect the traces.
+
+### Task 5.5: Document LangSmith local usage
+
+Scope:
+
+- Add a short LangSmith setup and usage section to the repo docs.
+- Explain required env vars and the expected local workflow.
+
+Acceptance criteria:
+
+- A developer can enable tracing locally without guessing the setup.
+
+Test in isolation:
+
+- Follow the documented steps on a clean shell and run one traced request.

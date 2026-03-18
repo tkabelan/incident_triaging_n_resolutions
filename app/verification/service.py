@@ -32,13 +32,8 @@ class VerificationService:
     @classmethod
     def from_settings(cls, settings: Any) -> "VerificationService":
         from langchain_core.prompts import ChatPromptTemplate
-        from langchain_openai import ChatOpenAI
 
-        llm = ChatOpenAI(
-            model=settings.models.verification_llm,
-            temperature=settings.models.temperature,
-            api_key=os.getenv(settings.models.openai_api_key_env_var),
-        )
+        llm = _build_verification_llm(settings)
         prompt = ChatPromptTemplate.from_messages(
             [
                 (
@@ -81,6 +76,30 @@ class VerificationService:
             reasoning=draft.reasoning,
             needs_web_search=draft.needs_web_search,
         )
+
+
+def _build_verification_llm(settings: Any) -> Any:
+    provider = settings.models.verification_provider.lower()
+
+    if provider == "anthropic":
+        from langchain_anthropic import ChatAnthropic
+
+        return ChatAnthropic(
+            model=settings.models.verification_llm,
+            temperature=settings.models.temperature,
+            api_key=os.getenv(settings.models.verification_api_key_env_var),
+        )
+
+    if provider == "openai":
+        from langchain_openai import ChatOpenAI
+
+        return ChatOpenAI(
+            model=settings.models.verification_llm,
+            temperature=settings.models.temperature,
+            api_key=os.getenv(settings.models.verification_api_key_env_var),
+        )
+
+    raise ValueError(f"Unsupported verification provider: {settings.models.verification_provider}")
 
 
 def _format_evidence(evidence: list[GroundingEvidence]) -> str:

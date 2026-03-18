@@ -236,10 +236,50 @@ pre {
   font-size: 1rem;
 }
 
+.classification-primary {
+  font-size: 1.5rem !important;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #154734;
+}
+
+.classification-secondary {
+  font-size: 1.08rem !important;
+  font-weight: 600;
+  color: #24463a;
+}
+
 .explanation-block {
   margin-top: 24px;
   padding-top: 18px;
   border-top: 1px solid rgba(16, 33, 27, 0.08);
+}
+
+.model-block {
+  margin-top: 24px;
+  padding: 18px 20px;
+  border: 1px solid rgba(16, 33, 27, 0.08);
+  border-radius: 20px;
+  background: rgba(248, 251, 246, 0.95);
+}
+
+.model-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 8px 0 0;
+}
+
+.model-grid dt {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #4e6b5f;
+}
+
+.model-grid dd {
+  margin: 6px 0 0;
+  font-size: 0.98rem;
 }
 
 .score-grid {

@@ -9,7 +9,14 @@ class FakeWorkflow:
     def __init__(self, _settings) -> None:
         pass
 
-    def run_single_error(self, error_text: str, *, row_id: str, source_file: str) -> dict:
+    def run_single_error(
+        self,
+        error_text: str,
+        *,
+        row_id: str,
+        source_file: str,
+        force_web_search: bool = False,
+    ) -> dict:
         return {
             "row_id": row_id,
             "status": "success",
@@ -17,6 +24,8 @@ class FakeWorkflow:
                 "final_status": "success",
                 "outcome_source": "llm_verified",
                 "classification": "network_error",
+                "main_category": "PLATFORM",
+                "subcategory": "Dependency / Integration Failures",
                 "resolution": "Restart the listener",
                 "branch_explanation": "The primary classification passed verification strongly enough, so no web search or refinement was needed.",
                 "kb_update_triggered": True,
@@ -40,6 +49,8 @@ class FakeWorkflow:
             },
             "classification": {
                 "category": "network_error",
+                "main_category": "PLATFORM",
+                "subcategory": "Dependency / Integration Failures",
                 "confidence": 0.82,
                 "reasoning": "grounded",
                 "proposed_resolution": "Restart the listener",

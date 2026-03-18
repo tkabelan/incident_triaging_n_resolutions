@@ -72,6 +72,8 @@ class ModelsConfig(BaseModel):
 
     primary_llm: str
     verification_llm: str
+    verification_provider: str = "openai"
+    verification_api_key_env_var: str = "OPENAI_API_KEY"
     embedding_provider: str
     embedding_model: str
     embedding_dimensions: int = 256
@@ -89,6 +91,12 @@ class SearchConfig(BaseModel):
     search_depth: str = "basic"
 
 
+class ClassificationConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    taxonomy_file: str
+
+
 class WorkflowPolicyConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -103,6 +111,16 @@ class WorkflowPolicyConfig(BaseModel):
     route_failed_refinement_to_human_review: bool = True
 
 
+class LangSmithConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    enabled: bool = False
+    project: str
+    endpoint: str = "https://api.smith.langchain.com"
+    api_key_env_var: str = "LANGSMITH_API_KEY"
+    run_name: str = "incident-error-workflow"
+
+
 class Settings(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -115,7 +133,9 @@ class Settings(BaseModel):
     knowledge_base: KnowledgeBaseConfig
     models: ModelsConfig
     search: SearchConfig
+    classification: ClassificationConfig
     workflow: WorkflowPolicyConfig
+    langsmith: LangSmithConfig
 
 
 def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
@@ -140,12 +160,36 @@ def load_config(config_path: Path | None = None) -> Settings:
     if env_config_raw:
         data = _deep_merge(data, json.loads(env_config_raw))
 
+    settings = Settings.model_validate(data)
+
     vector_store_settings = data.get("vector_store", {})
     if vector_store_settings.get("telemetry_enabled") is False:
         os.environ["ANONYMIZED_TELEMETRY"] = "False"
         os.environ["CHROMA_TELEMETRY_IMPL"] = "chromadb.telemetry.product.null.NullTelemetry"
 
-    return Settings.model_validate(data)
+    _apply_langsmith_environment(settings)
+
+    return settings
+
+
+def _apply_langsmith_environment(settings: Settings) -> None:
+    if not settings.langsmith.enabled:
+        os.environ["LANGSMITH_TRACING"] = "false"
+        os.environ["LANGCHAIN_TRACING_V2"] = "false"
+        return
+
+    api_key = os.getenv(settings.langsmith.api_key_env_var)
+    if not api_key:
+        raise ValueError(
+            "LangSmith tracing is enabled but the required API key environment variable "
+            f"'{settings.langsmith.api_key_env_var}' is not set."
+        )
+
+    os.environ["LANGSMITH_API_KEY"] = api_key
+    os.environ["LANGSMITH_TRACING"] = "true"
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGSMITH_PROJECT"] = settings.langsmith.project
+    os.environ["LANGSMITH_ENDPOINT"] = settings.langsmith.endpoint
 
 
 @lru_cache(maxsize=1)

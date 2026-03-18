@@ -34,6 +34,8 @@
   "models": {
     "primary_llm": "gpt-4.1-mini",
     "verification_llm": "gpt-4.1-mini",
+    "verification_provider": "openai",
+    "verification_api_key_env_var": "OPENAI_API_KEY",
     "embedding_provider": "local_hash",
     "embedding_model": "local-hash-256",
     "embedding_dimensions": 256,
@@ -47,6 +49,9 @@
     "max_results": 3,
     "search_depth": "basic"
   },
+  "classification": {
+    "taxonomy_file": "config/classification_taxonomy.json"
+  },
   "workflow": {
     "allow_direct_kb_resolution": true,
     "verification_confidence_threshold": 0.6,
@@ -57,5 +62,12 @@
     "max_refinement_retries": 1,
     "route_failed_verification_to_human_review": true,
     "route_failed_refinement_to_human_review": true
+  },
+  "langsmith": {
+    "enabled": false,
+    "project": "incident-triaging-n-resolutions",
+    "endpoint": "https://api.smith.langchain.com",
+    "api_key_env_var": "LANGSMITH_API_KEY",
+    "run_name": "incident-error-workflow"
   }
 }

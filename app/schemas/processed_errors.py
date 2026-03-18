@@ -69,6 +69,8 @@ class ClassificationResolutionResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     category: str
+    main_category: str | None = None
+    subcategory: str | None = None
     confidence: float
     reasoning: str
     proposed_resolution: str
@@ -79,6 +81,8 @@ class ClassificationResolutionDraft(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     category: str
+    main_category: str
+    subcategory: str
     confidence: float
     reasoning: str
     proposed_resolution: str

@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from app.classification.taxonomy import load_classification_taxonomy
 from app.retrieval.local_embeddings import LocalHashEmbeddings
 from app.schemas.processed_errors import (
     ClassificationResolutionResult,
@@ -22,11 +23,13 @@ class KnowledgeBaseRetriever:
         self,
         vector_store: Any,
         seed_file: str | Path,
+        classification_taxonomy_file: str | Path,
         max_results: int = 3,
         direct_match_threshold: float = 0.75,
     ) -> None:
         self._vector_store = vector_store
         self._seed_file = Path(seed_file)
+        self._classification_taxonomy = load_classification_taxonomy(classification_taxonomy_file)
         self._max_results = max_results
         self._direct_match_threshold = direct_match_threshold
         self._seed_if_empty()
@@ -44,6 +47,7 @@ class KnowledgeBaseRetriever:
         return cls(
             vector_store=vector_store,
             seed_file=settings.knowledge_base.seed_file,
+            classification_taxonomy_file=settings.classification.taxonomy_file,
             max_results=settings.knowledge_base.max_results,
             direct_match_threshold=settings.knowledge_base.direct_match_threshold,
         )
@@ -106,8 +110,11 @@ class KnowledgeBaseRetriever:
             processed_error.row_id,
             match.score,
         )
+        main_category, subcategory = self._classification_taxonomy.resolve(category=match.category)
         return ClassificationResolutionResult(
             category=match.category,
+            main_category=main_category,
+            subcategory=subcategory,
             confidence=min(match.score, 1.0),
             reasoning=f"Resolved directly from vector KB match '{match.kb_id}' ({match.source_type}).",
             proposed_resolution=match.resolution,

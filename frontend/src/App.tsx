@@ -57,6 +57,10 @@ function formatStatus(value: string) {
   return value.replace(/_/g, " ");
 }
 
+function formatRowId(value: string) {
+  return value === "manual-1" ? "Manual entry" : value;
+}
+
 function formatConfidence(value?: number | null) {
   if (value === null || value === undefined) {
     return "Not available";
@@ -78,6 +82,37 @@ function getStageReason(stage: StageData): string {
     stage.reason ??
     stage.error?.message ??
     "No additional detail returned."
+  );
+}
+
+function renderStageMeta(stage: StageData, stageKey: string) {
+  if (stageKey !== "chroma_db") {
+    return null;
+  }
+
+  return (
+    <>
+      <div>
+        <dt>Evidence count</dt>
+        <dd>{stage.evidence_count ?? 0}</dd>
+      </div>
+      <div>
+        <dt>Top match score</dt>
+        <dd>{stage.top_match_score !== undefined && stage.top_match_score !== null ? formatScore(stage.top_match_score) : "Not available"}</dd>
+      </div>
+      <div>
+        <dt>Direct match threshold</dt>
+        <dd>
+          {stage.direct_match_threshold !== undefined && stage.direct_match_threshold !== null
+            ? formatScore(stage.direct_match_threshold)
+            : "Not available"}
+        </dd>
+      </div>
+      <div>
+        <dt>Direct match</dt>
+        <dd>{stage.direct_match ? "Yes" : "No"}</dd>
+      </div>
+    </>
   );
 }
 
@@ -265,7 +300,7 @@ function App() {
     <main className="app-shell">
       <section className="hero">
         <p className="eyebrow">Incident Agent</p>
-        <h1>Paste one error and run the agent.</h1>
+        <h1>Enter error details</h1>
         <p className="hero-copy">
           This first frontend slice is focused on submission flow only. It sends one error to the
           FastAPI backend and returns the backend response for the next UI steps.
@@ -388,22 +423,46 @@ function App() {
 
             <dl className="result-grid">
               <div>
+                <dt>Classification</dt>
+                <dd className="classification-primary">
+                  {result.classification?.main_category ?? result.agent_trace.main_category ?? "Not available"}
+                </dd>
+              </div>
+              <div>
+                <dt>Subcategory</dt>
+                <dd className="classification-secondary">
+                  {result.classification?.subcategory ?? result.agent_trace.subcategory ?? "Not available"}
+                </dd>
+              </div>
+              <div>
                 <dt>Row ID</dt>
-                <dd>{result.row_id}</dd>
+                <dd>{formatRowId(result.row_id)}</dd>
               </div>
               <div>
                 <dt>Outcome source</dt>
                 <dd>{result.agent_trace.outcome_source ? toTitleCase(result.agent_trace.outcome_source) : "Not available"}</dd>
               </div>
               <div>
-                <dt>Classification</dt>
-                <dd>{result.agent_trace.classification ?? "Not available"}</dd>
-              </div>
-              <div>
                 <dt>Resolution</dt>
                 <dd>{result.agent_trace.resolution ?? "Not available"}</dd>
               </div>
             </dl>
+
+            {result.models ? (
+              <div className="model-block">
+                <p className="section-label">Models used</p>
+                <dl className="model-grid">
+                  <div>
+                    <dt>Primary classification</dt>
+                    <dd>{result.models.primary_classification}</dd>
+                  </div>
+                  <div>
+                    <dt>Verification</dt>
+                    <dd>{result.models.verification}</dd>
+                  </div>
+                </dl>
+              </div>
+            ) : null}
 
             <div className="explanation-block">
               <p className="section-label">What happened</p>
@@ -500,7 +559,7 @@ function App() {
             <div className="timeline-header">
               <div>
                 <p className="section-label">Agent steps</p>
-                <h2>Stage timeline</h2>
+                <h2>Stage timeline (WIP)</h2>
               </div>
               <p className="timeline-helper">Each card shows whether a stage ran, skipped, or failed.</p>
             </div>
@@ -524,6 +583,7 @@ function App() {
                         <dt>Confidence</dt>
                         <dd>{formatConfidence(stage.confidence)}</dd>
                       </div>
+                      {renderStageMeta(stage, stageKey)}
                       {"attempts" in stage ? (
                         <div>
                           <dt>Attempts</dt>

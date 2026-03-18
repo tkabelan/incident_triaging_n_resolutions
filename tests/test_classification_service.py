@@ -12,6 +12,8 @@ class FakeStructuredLlm:
         assert "evidence" in payload
         return ClassificationResolutionDraft(
             category="access_denied",
+            main_category="PLATFORM",
+            subcategory="Authentication & Permissions",
             confidence=0.88,
             reasoning="The evidence matches an S3 permission failure.",
             proposed_resolution="Check IAM and bucket policy.",
@@ -57,5 +59,7 @@ def test_classification_service_uses_structured_llm_output() -> None:
     result = service.classify_and_resolve(processed_error, evidence)
 
     assert result.category == "access_denied"
+    assert result.main_category == "PLATFORM"
+    assert result.subcategory == "Authentication & Permissions"
     assert result.confidence == 0.88
     assert result.proposed_resolution == "Check IAM and bucket policy."

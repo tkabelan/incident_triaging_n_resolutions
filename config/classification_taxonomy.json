@@ -1,0 +1,64 @@
+{
+  "main_categories": [
+    {
+      "name": "PLATFORM",
+      "subcategories": [
+        "Compute / Cluster Issues",
+        "Resource Constraints",
+        "Platform Services Failure",
+        "Dependency / Integration Failures",
+        "Authentication & Permissions"
+      ]
+    },
+    {
+      "name": "WORKFLOW",
+      "subcategories": [
+        "Code Errors",
+        "Deployment Issues",
+        "Orchestration Failures",
+        "Configuration Errors",
+        "Retry / Idempotency Issues"
+      ]
+    },
+    {
+      "name": "DATA",
+      "subcategories": [
+        "Schema Issues",
+        "Data Quality Issues",
+        "Data Availability Issues",
+        "Data Integrity Issues",
+        "Volume / Anomaly Issues"
+      ]
+    }
+  ],
+  "internal_category_mappings": {
+    "access_denied": {
+      "main_category": "PLATFORM",
+      "subcategory": "Authentication & Permissions"
+    },
+    "file_not_found": {
+      "main_category": "DATA",
+      "subcategory": "Data Availability Issues"
+    },
+    "concurrency_conflict": {
+      "main_category": "WORKFLOW",
+      "subcategory": "Retry / Idempotency Issues"
+    },
+    "network_error": {
+      "main_category": "PLATFORM",
+      "subcategory": "Dependency / Integration Failures"
+    },
+    "application_error": {
+      "main_category": "WORKFLOW",
+      "subcategory": "Code Errors"
+    },
+    "environmental_issue": {
+      "main_category": "PLATFORM",
+      "subcategory": "Platform Services Failure"
+    },
+    "unknown": {
+      "main_category": "WORKFLOW",
+      "subcategory": "Configuration Errors"
+    }
+  }
+}

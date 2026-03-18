@@ -1,6 +1,6 @@
 {
   "row_id": "manual-1",
-  "error_prefix": "[CANNOT_OPEN_SOCKET] Can not open socket: [\"tried to connect to ('127.0.0.1', 37311), but an error occurred: [Errno 111] Connection refused\"]",
-  "error_message": "[CANNOT_OPEN_SOCKET] Can not open socket: [\"tried to connect to ('127.0.0.1', 37311), but an error occurred: [Errno 111] Connection refused\"]",
+  "error_prefix": "[TABLE_OR_VIEW_NOT_FOUND]",
+  "error_message": "[TABLE_OR_VIEW_NOT_FOUND] The table or view `published_domain`.`demand_planning`.`preseason_seasonal_store_level_assortment_plan_all_history_v1` cannot be found. Verify the spelling and correctness of the schema and catalog.\nIf you did not qualify the name with a schema, verify the current_schema() output, or qualify the name with the correct schema and catalog.\nTo tolerate the error on drop use DROP VIEW IF EXISTS or DROP TABLE IF EXISTS. SQLSTATE: 42P01\n== SQL (line 1814, position 12) ==\nalter view published_domain.demand_planning.preseason_seasonal_store_level_assortment_plan_all_history_v1 as\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
   "source_file": "manual_input"
 }

@@ -14,6 +14,8 @@ export type StageData = {
   results?: number;
   direct_match?: boolean;
   evidence_count?: number;
+  top_match_score?: number | null;
+  direct_match_threshold?: number | null;
   passed?: boolean | null;
   needs_web_search?: boolean | null;
   classification?: string | null;
@@ -36,6 +38,8 @@ export type AgentTrace = {
   final_status: string;
   outcome_source?: string | null;
   classification?: string | null;
+  main_category?: string | null;
+  subcategory?: string | null;
   resolution?: string | null;
   branch_explanation?: string | null;
   kb_update_triggered?: boolean;
@@ -56,7 +60,18 @@ export type ProcessErrorResponse = {
   row_id: string;
   status: string;
   agent_trace: AgentTrace;
-  classification?: Record<string, unknown> | null;
+  models?: {
+    primary_classification: string;
+    verification: string;
+  } | null;
+  classification?: {
+    category?: string | null;
+    main_category?: string | null;
+    subcategory?: string | null;
+    confidence?: number | null;
+    reasoning?: string | null;
+    proposed_resolution?: string | null;
+  } | null;
   verification?: Record<string, unknown> | null;
   kb_update_reference?: string | null;
   error?: StageError | null;

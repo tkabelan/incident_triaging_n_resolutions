@@ -1,3 +1,4 @@
+README.md
 pyproject.toml
 ./app/__init__.py
 ./app/logging_config.py
@@ -29,6 +30,7 @@ pyproject.toml
 ./app/normalization/__init__.py
 ./app/normalization/error_normalizer.py
 ./app/normalization/taxonomy.py
+./app/observability/langsmith.py
 ./app/retrieval/__init__.py
 ./app/retrieval/kb_retriever.py
 ./app/retrieval/local_embeddings.py

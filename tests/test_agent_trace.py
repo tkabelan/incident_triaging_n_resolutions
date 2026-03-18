@@ -46,6 +46,8 @@ def test_agent_trace_contains_frontend_ready_stage_details() -> None:
     ]
     state.classification_result = ClassificationResolutionResult(
         category="network_error",
+        main_category="PLATFORM",
+        subcategory="Dependency / Integration Failures",
         confidence=0.84,
         reasoning="grounded",
         proposed_resolution="restart listener",
@@ -67,6 +69,8 @@ def test_agent_trace_contains_frontend_ready_stage_details() -> None:
     assert trace["final_status"] == "success_after_refinement"
     assert trace["outcome_source"] == "refined_after_web_search"
     assert trace["kb_update_triggered"] is False
+    assert trace["main_category"] == "PLATFORM"
+    assert trace["subcategory"] == "Dependency / Integration Failures"
     assert trace["stages"]["chroma_db"]["evidence_count"] == 1
     assert trace["stages"]["planner"]["next_action"] == "kb_update"
     assert trace["stages"]["web_search"]["results"] == 0
