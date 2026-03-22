@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import os
 
-from anthropic import APIConnectionError, APIStatusError, Anthropic, RateLimitError
+from anthropic import Anthropic, APIConnectionError, APIStatusError, RateLimitError
 from dotenv import load_dotenv
 
 
