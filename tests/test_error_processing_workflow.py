@@ -133,7 +133,7 @@ def test_workflow_records_rate_limit_and_continues() -> None:
         classifier=FakeClassifier(),
     )
 
-    results = workflow.run_first_three_errors()
+    results = workflow.run_csv_errors()
 
     assert len(results) == 2
     assert results[0]["status"] == "human_review_required"

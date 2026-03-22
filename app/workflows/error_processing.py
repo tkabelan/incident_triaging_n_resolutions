@@ -51,12 +51,12 @@ class ErrorProcessingWorkflow:
         self._progress_callback: Callable[[dict[str, Any]], None] | None = None
         self._graph = self._build_graph()
 
-    def run_first_three_errors(self) -> list[dict]:
+    def run_csv_errors(self) -> list[dict]:
         csv_path = (
             Path(self._settings.ingestion.error_data_dir)
             / self._settings.ingestion.default_csv_file
         )
-        logger.info("Starting end-to-end processing for first three errors from %s", csv_path)
+        logger.info("Starting end-to-end processing for CSV errors from %s", csv_path)
         results: list[dict] = []
         for raw_record in self._ingestion_service.read_errors(csv_path):
             results.append(self._process_one_error(raw_record))
@@ -257,9 +257,13 @@ class ErrorProcessingWorkflow:
             updates["direct_match"].score if updates["direct_match"] is not None else None
         )
         updates["stage_details"]["chroma_db"]["top_match_score"] = top_match_score
-        updates["stage_details"]["chroma_db"]["direct_match_threshold"] = (
-            self._settings.knowledge_base.direct_match_threshold
+        knowledge_base_settings = getattr(self._settings, "knowledge_base", None)
+        direct_match_threshold = (
+            getattr(knowledge_base_settings, "direct_match_threshold", None)
+            if knowledge_base_settings is not None
+            else None
         )
+        updates["stage_details"]["chroma_db"]["direct_match_threshold"] = direct_match_threshold
         if retrieval.direct_match is not None:
             updates["stage_details"]["chroma_db"]["reasoning"] = (
                 "A strong KB match met the direct-match threshold, so the workflow can reuse it."

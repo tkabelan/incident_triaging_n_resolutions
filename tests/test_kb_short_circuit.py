@@ -119,7 +119,7 @@ def test_workflow_short_circuits_on_strong_kb_match() -> None:
         classifier=FailingClassifier(),
     )
 
-    results = workflow.run_first_three_errors()
+    results = workflow.run_csv_errors()
 
     assert results[0]["status"] == "resolved_from_kb"
     assert results[0]["classification"]["proposed_resolution"] == "check IAM"

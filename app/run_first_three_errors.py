@@ -11,7 +11,7 @@ def main() -> None:
     settings = get_settings()
     init_logging(settings.logging)
     workflow = ErrorProcessingWorkflow(settings)
-    results = workflow.run_first_three_errors()
+    results = workflow.run_csv_errors()
     print(json.dumps(results, indent=2))
 
 

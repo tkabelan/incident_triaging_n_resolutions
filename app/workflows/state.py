@@ -217,11 +217,23 @@ class AgentWorkflowStateModel(BaseModel):
             }
             for item in self.web_search_results
         ]
+        chroma_items = [
+            {
+                "kb_id": item.kb_id,
+                "title": item.title,
+                "category": item.category,
+                "score": item.score,
+                "resolution": item.resolution,
+                "notes": item.notes,
+            }
+            for item in self.evidence
+        ]
         stages = {
             "chroma_db": {
                 **self.stage_details["chroma_db"].model_dump(exclude_none=True),
                 "direct_match": self.direct_match is not None,
                 "evidence_count": len(self.evidence),
+                "items": chroma_items,
             },
             "planner": {
                 **self.stage_details["planner"].model_dump(exclude_none=True),

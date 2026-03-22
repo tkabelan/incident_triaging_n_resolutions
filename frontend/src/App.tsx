@@ -116,6 +116,47 @@ function renderStageMeta(stage: StageData, stageKey: string) {
   );
 }
 
+function renderStageItems(stage: StageData, stageKey: string) {
+  if (stageKey !== "chroma_db" || !stage.items || stage.items.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="stage-items">
+      <p className="stage-items-label">ChromaDB results</p>
+      <div className="stage-item-list">
+        {stage.items.map((item, index) => {
+          const kbId = typeof item.kb_id === "string" ? item.kb_id : "unknown";
+          const title = typeof item.title === "string" ? item.title : "Untitled match";
+          const category = typeof item.category === "string" ? item.category : "Not available";
+          const resolution =
+            typeof item.resolution === "string" ? item.resolution : "No resolution returned.";
+          const score =
+            typeof item.score === "number" ? formatScore(item.score) : "Not available";
+
+          return (
+            <article key={`${kbId}-${index}`} className="stage-item-card">
+              <div className="stage-item-header">
+                <h4>{title}</h4>
+                <span>Score {score}</span>
+              </div>
+              <p className="stage-item-meta">
+                <strong>KB ID:</strong> {kbId}
+              </p>
+              <p className="stage-item-meta">
+                <strong>Category:</strong> {category}
+              </p>
+              <p className="stage-item-meta">
+                <strong>Resolution:</strong> {resolution}
+              </p>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function getWebSearchItems(result: ProcessErrorResponse): WebSearchItem[] {
   const webStage = result.agent_trace.stages.web_search;
   const items = webStage?.items ?? [];
@@ -611,6 +652,7 @@ function App() {
                     </dl>
 
                     <p className="timeline-reason">{getStageReason(stage)}</p>
+                    {renderStageItems(stage, stageKey)}
                   </article>
                 );
               })}

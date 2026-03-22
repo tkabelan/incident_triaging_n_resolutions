@@ -11,13 +11,14 @@ def invoke_with_optional_langsmith_trace(
     settings: Settings,
     initial_state: dict[str, Any],
 ) -> dict[str, Any]:
-    if not settings.langsmith.enabled:
+    langsmith_settings = getattr(settings, "langsmith", None)
+    if langsmith_settings is None or not langsmith_settings.enabled:
         return workflow_call(initial_state)
 
     from langsmith import traceable
     from langsmith.run_helpers import tracing_context
 
-    @traceable(name=settings.langsmith.run_name, run_type="chain")
+    @traceable(name=langsmith_settings.run_name, run_type="chain")
     def _invoke() -> dict[str, Any]:
         return workflow_call(initial_state)
 

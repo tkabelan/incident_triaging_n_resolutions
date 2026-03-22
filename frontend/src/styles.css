@@ -408,6 +408,55 @@ pre {
   grid-column: 1 / -1;
 }
 
+.stage-items {
+  margin-top: 18px;
+}
+
+.stage-items-label {
+  margin: 0 0 10px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #4e6b5f;
+}
+
+.stage-item-list {
+  display: grid;
+  gap: 10px;
+}
+
+.stage-item-card {
+  padding: 14px 16px;
+  border: 1px solid rgba(16, 33, 27, 0.08);
+  border-radius: 16px;
+  background: rgba(248, 251, 246, 0.95);
+}
+
+.stage-item-header {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.stage-item-header h4 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.stage-item-header span {
+  color: #4e6b5f;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.stage-item-meta {
+  margin: 8px 0 0;
+  color: #365246;
+  font-size: 0.92rem;
+}
+
 .timeline-header {
   display: flex;
   gap: 16px;

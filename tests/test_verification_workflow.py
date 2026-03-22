@@ -157,7 +157,7 @@ def test_workflow_runs_web_search_when_verification_fails() -> None:
         classifier=FakeClassifier(),
     )
 
-    results = workflow.run_first_three_errors()
+    results = workflow.run_csv_errors()
 
     assert results[0]["status"] == "success_after_refinement"
     assert "web_search_completed" in results[0]["steps"]
