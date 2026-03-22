@@ -265,17 +265,17 @@ class ErrorProcessingWorkflow:
         )
         updates["stage_details"]["chroma_db"]["direct_match_threshold"] = direct_match_threshold
         if retrieval.direct_match is not None:
-            updates["stage_details"]["chroma_db"]["reasoning"] = (
-                "A strong KB match met the direct-match threshold, so the workflow can reuse it."
-            )
+            updates["stage_details"]["chroma_db"][
+                "reasoning"
+            ] = "A strong KB match met the direct-match threshold, so the workflow can reuse it."
         elif retrieval.evidence:
-            updates["stage_details"]["chroma_db"]["reasoning"] = (
-                "ChromaDB found similar incidents, but the best match was below the direct-match threshold, so the workflow continued to the LLM."
-            )
+            updates["stage_details"]["chroma_db"][
+                "reasoning"
+            ] = "ChromaDB found similar incidents, but the best match was below the direct-match threshold, so the workflow continued to the LLM."
         else:
-            updates["stage_details"]["chroma_db"]["reasoning"] = (
-                "ChromaDB did not return matching incidents, so the workflow continued to the LLM."
-            )
+            updates["stage_details"]["chroma_db"][
+                "reasoning"
+            ] = "ChromaDB did not return matching incidents, so the workflow continued to the LLM."
         return updates
 
     def _planner_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
@@ -287,6 +287,11 @@ class ErrorProcessingWorkflow:
         updates["steps"].append(f"planner_{context or 'unknown'}")
         updates["stage_details"]["planner"]["status"] = "pass"
         updates["stage_details"]["planner"]["reasoning"] = reason
+        updates["stage_details"]["planner"]["items"] = self._build_planner_items(
+            updates,
+            context=context,
+            next_action=next_action,
+        )
         return updates
 
     def _direct_kb_resolution_node(self, state: AgentWorkflowState) -> AgentWorkflowState:
@@ -704,6 +709,112 @@ class ErrorProcessingWorkflow:
             "evidence_kb_ids": ",".join(item.kb_id for item in evidence) or None,
             "has_direct_match": state.get("direct_match") is not None,
         }
+
+    def _build_planner_items(
+        self,
+        state: AgentWorkflowState,
+        *,
+        context: str | None,
+        next_action: str,
+    ) -> list[dict[str, Any]]:
+        verification = state.get("verification_result")
+        direct_match = state.get("direct_match")
+        knowledge_base_settings = getattr(self._settings, "knowledge_base", None)
+        workflow_settings = getattr(self._settings, "workflow", None)
+
+        items: list[dict[str, Any]] = [
+            {"label": "Context", "value": context or "unknown"},
+            {"label": "Chosen action", "value": next_action},
+        ]
+
+        if context == "after_kb_retrieval":
+            items.extend(
+                [
+                    {
+                        "label": "Evidence count",
+                        "value": len(state.get("evidence", [])),
+                    },
+                    {
+                        "label": "Direct match found",
+                        "value": "Yes" if direct_match is not None else "No",
+                    },
+                    {
+                        "label": "Direct match score",
+                        "value": round(direct_match.score, 3) if direct_match is not None else None,
+                    },
+                    {
+                        "label": "Direct match threshold",
+                        "value": getattr(knowledge_base_settings, "direct_match_threshold", None),
+                    },
+                ]
+            )
+
+        if context in {"after_verification", "after_refinement_verification"}:
+            items.extend(
+                [
+                    {
+                        "label": "Verification passed",
+                        "value": verification.passed if verification is not None else None,
+                    },
+                    {
+                        "label": "Verification confidence",
+                        "value": verification.confidence if verification is not None else None,
+                    },
+                    {
+                        "label": "Needs web search",
+                        "value": (
+                            verification.needs_web_search if verification is not None else None
+                        ),
+                    },
+                    {
+                        "label": "Policy threshold",
+                        "value": (
+                            getattr(workflow_settings, "refinement_confidence_threshold", None)
+                            if context == "after_refinement_verification"
+                            else getattr(
+                                workflow_settings, "verification_confidence_threshold", None
+                            )
+                        ),
+                        "description": (
+                            "Minimum confidence required by policy for the planner to accept the verification result."
+                        ),
+                    },
+                    {
+                        "label": "Force web search",
+                        "value": state.get("force_web_search", False),
+                    },
+                ]
+            )
+
+        if context == "after_primary_classification_failure":
+            items.extend(
+                [
+                    {
+                        "label": "Classification attempts",
+                        "value": state.get("classification_attempts", 0),
+                    },
+                    {
+                        "label": "Retry budget",
+                        "value": getattr(workflow_settings, "max_classification_retries", None),
+                    },
+                ]
+            )
+
+        if context == "after_refinement_failure":
+            items.extend(
+                [
+                    {
+                        "label": "Refinement attempts",
+                        "value": state.get("refinement_attempts", 0),
+                    },
+                    {
+                        "label": "Retry budget",
+                        "value": getattr(workflow_settings, "max_refinement_retries", None),
+                    },
+                ]
+            )
+
+        return items
 
     def _emit_progress(
         self,

@@ -50,9 +50,7 @@ def test_load_config(tmp_path: Path) -> None:
                     "max_results": 3,
                     "search_depth": "basic",
                 },
-                "classification": {
-                    "taxonomy_file": "config/classification_taxonomy.json"
-                },
+                "classification": {"taxonomy_file": "config/classification_taxonomy.json"},
                 "workflow": {
                     "allow_direct_kb_resolution": True,
                     "verification_confidence_threshold": 0.6,
@@ -131,9 +129,7 @@ def test_load_config_requires_langsmith_key_when_enabled(
                     "max_results": 3,
                     "search_depth": "basic",
                 },
-                "classification": {
-                    "taxonomy_file": "config/classification_taxonomy.json"
-                },
+                "classification": {"taxonomy_file": "config/classification_taxonomy.json"},
                 "workflow": {
                     "allow_direct_kb_resolution": True,
                     "verification_confidence_threshold": 0.6,

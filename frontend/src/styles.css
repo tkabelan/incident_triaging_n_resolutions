@@ -426,6 +426,41 @@ pre {
   gap: 10px;
 }
 
+.planner-item-list {
+  display: grid;
+  gap: 8px;
+}
+
+.planner-item-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) 1fr;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(16, 33, 27, 0.08);
+  border-radius: 12px;
+  background: rgba(248, 251, 246, 0.95);
+}
+
+.planner-item-row dt {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #4e6b5f;
+}
+
+.planner-item-description {
+  margin: 4px 0 0;
+  color: #5a7267;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.planner-item-row dd {
+  margin: 0;
+  color: #24463a;
+  font-size: 0.92rem;
+}
+
 .stage-item-card {
   padding: 14px 16px;
   border: 1px solid rgba(16, 33, 27, 0.08);

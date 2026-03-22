@@ -1,6 +1,6 @@
 {
   "row_id": "manual-1",
-  "error_prefix": "Run",
-  "error_message": "Run failed with error message\n Library installation failed for library due to user error for pypi {\n  package: \"koheesio[se]==0.10.1\"\n}\n Error messages:\nLibrary installation attempted on the driver node of cluster 0105-003005-yus8pziq and failed. Package hash mismatch detected. The downloaded package's hash does not match its expected hash.\nDescription: Occurs when the hash of a downloaded package does not match its expected hash.\nSuggested Action: Retry installation, restart the cluster, and/or move large package installations to Workspace Files, UC Volumes, or a private PyPI repository. Error code: ERROR_HASH_MISMATCH, error message: org.apache.spark.SparkException: Process List(/bin/su, libraries, -c, bash /local_disk0/.ephemeral_nfs/cluster_libraries/python/python_start_clusterwide.sh /local_disk0/.ephemeral_nfs/cluster_libraries/python/bin/pip install 'koheesio[se]==0.10.1' --disable-pip-version-check) exited wit ...\n***WARNING: message truncated. Skipped 639 bytes of output**",
+  "error_prefix": "StreamingQueryException: [STREAM_FAILED] Query [id = 8846d09d-0025-46c1-8c4f-4b5771d05bd0, runId = fae298dc-3db1-480d-b6c0-02178b2fb3c8] terminated with exception: kafkashaded.org.",
+  "error_message": "StreamingQueryException: [STREAM_FAILED] Query [id = 8846d09d-0025-46c1-8c4f-4b5771d05bd0, runId = fae298dc-3db1-480d-b6c0-02178b2fb3c8] terminated with exception: kafkashaded.org.",
   "source_file": "manual_input"
 }

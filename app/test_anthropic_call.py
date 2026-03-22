@@ -3,47 +3,42 @@ from __future__ import annotations
 import json
 import os
 
+from anthropic import APIConnectionError, APIStatusError, Anthropic, RateLimitError
 from dotenv import load_dotenv
-from openai import APIConnectionError, APIStatusError, OpenAI, RateLimitError
 
 
 def main() -> None:
     load_dotenv(".env")
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
-        print(json.dumps({"ok": False, "message": "Missing OPENAI_API_KEY"}, indent=2))
+        print(json.dumps({"ok": False, "message": "Missing ANTHROPIC_API_KEY"}, indent=2))
         return
 
-    client = OpenAI(api_key=api_key)
+    client = Anthropic(api_key=api_key)
 
     try:
-        response = client.chat.completions.create(
-            model="gpt-5-mini",
+        response = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=128,
             messages=[{"role": "user", "content": "what does kafka do"}],
         )
+        text_parts = [
+            block.text for block in response.content if getattr(block, "type", None) == "text"
+        ]
         print(
             json.dumps(
                 {
                     "ok": True,
                     "model": response.model,
-                    "reply": response.choices[0].message.content,
+                    "reply": "\n".join(text_parts).strip(),
                 },
                 indent=2,
             )
         )
     except RateLimitError as exc:
-        error = getattr(exc, "body", {}) or {}
-        details = error.get("error", {})
-        if details.get("code") == "insufficient_quota":
-            print("OpenAI quota exceeded. Check billing.")
-            return
         print(
             json.dumps(
-                {
-                    "ok": False,
-                    "type": "RateLimitError",
-                    "message": str(exc),
-                },
+                {"ok": False, "type": "RateLimitError", "message": str(exc)},
                 indent=2,
             )
         )

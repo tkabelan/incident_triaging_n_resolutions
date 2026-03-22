@@ -32,10 +32,10 @@
     "direct_match_threshold": 0.75
   },
   "models": {
-    "primary_llm": "gpt-4.1-mini",
-    "verification_llm": "gpt-4.1-mini",
-    "verification_provider": "openai",
-    "verification_api_key_env_var": "OPENAI_API_KEY",
+    "primary_llm": "gpt-5.4",
+    "verification_llm": "claude-sonnet-4-20250514",
+    "verification_provider": "anthropic",
+    "verification_api_key_env_var": "ANTHROPIC_API_KEY",
     "embedding_provider": "local_hash",
     "embedding_model": "local-hash-256",
     "embedding_dimensions": 256,

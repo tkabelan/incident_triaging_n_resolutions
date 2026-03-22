@@ -71,12 +71,13 @@ def process_single_error(request: SingleErrorRequest) -> SingleErrorResponse:
 @router.post("/errors/process/stream")
 def process_single_error_stream(request: SingleErrorRequest) -> StreamingResponse:
     event_queue: Queue[dict | None] = Queue()
+    settings = get_settings()
 
     def publish(event: dict) -> None:
         event_queue.put(event)
 
     def worker() -> None:
-        workflow = ErrorProcessingWorkflow(get_settings())
+        workflow = ErrorProcessingWorkflow(settings)
         try:
             result = workflow.run_single_error(
                 request.error_text,
@@ -85,7 +86,20 @@ def process_single_error_stream(request: SingleErrorRequest) -> StreamingRespons
                 force_web_search=request.force_web_search,
                 progress_callback=publish,
             )
-            event_queue.put({"type": "result", "payload": result})
+            payload = SingleErrorResponse(
+                row_id=result["row_id"],
+                status=result["status"],
+                agent_trace=result["agent_trace"],
+                models={
+                    "primary_classification": settings.models.primary_llm,
+                    "verification": settings.models.verification_llm,
+                },
+                classification=result.get("classification"),
+                verification=result.get("verification"),
+                kb_update_reference=result.get("kb_update_reference"),
+                error=result.get("error"),
+            ).model_dump()
+            event_queue.put({"type": "result", "payload": payload})
         except Exception as exc:
             event_queue.put(
                 {

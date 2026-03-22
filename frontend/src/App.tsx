@@ -116,8 +116,71 @@ function renderStageMeta(stage: StageData, stageKey: string) {
   );
 }
 
+function renderStageModel(result: ProcessErrorResponse, stageKey: string) {
+  if (!result.models) {
+    return null;
+  }
+
+  if (stageKey === "primary_llm") {
+    return (
+      <div>
+        <dt>Model</dt>
+        <dd>{result.models.primary_classification}</dd>
+      </div>
+    );
+  }
+
+  if (stageKey === "verification_llm") {
+    return (
+      <div>
+        <dt>Model</dt>
+        <dd>{result.models.verification}</dd>
+      </div>
+    );
+  }
+
+  return null;
+}
+
 function renderStageItems(stage: StageData, stageKey: string) {
-  if (stageKey !== "chroma_db" || !stage.items || stage.items.length === 0) {
+  if (!stage.items || stage.items.length === 0) {
+    return null;
+  }
+
+  if (stageKey === "planner") {
+    return (
+      <div className="stage-items">
+        <p className="stage-items-label">Planner inputs</p>
+        <div className="planner-item-list">
+          {stage.items.map((item, index) => {
+            const label = typeof item.label === "string" ? item.label : "Field";
+            const rawValue = item.value;
+            const description =
+              typeof item.description === "string" ? item.description : null;
+            const value =
+              typeof rawValue === "boolean"
+                ? rawValue
+                  ? "Yes"
+                  : "No"
+                : rawValue === null || rawValue === undefined
+                  ? "Not available"
+                  : String(rawValue);
+            return (
+              <div key={`${label}-${index}`} className="planner-item-row">
+                <div>
+                  <dt>{label}</dt>
+                  {description ? <p className="planner-item-description">{description}</p> : null}
+                </div>
+                <dd>{value}</dd>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  if (stageKey !== "chroma_db") {
     return null;
   }
 
@@ -452,6 +515,37 @@ function App() {
       ) : null}
 
       {result ? (
+        <section className="panel">
+          <div className="timeline-header">
+            <div>
+              <p className="section-label">Agent walkthrough</p>
+              <h2>Short reasoning steps</h2>
+            </div>
+            <p className="timeline-helper">
+              This is a simple explanation of what the agent did, without raw internal reasoning.
+            </p>
+          </div>
+
+          <div className="friendly-steps">
+            {buildFriendlySteps(result).map((step, index) => (
+              <div key={`${step.title}-${index}`} className="progress-row final-progress-row">
+                <div className="progress-copy">
+                  <span>
+                    <strong>
+                      {step.icon} {step.title}
+                    </strong>
+                    {" - "}
+                    {step.description}
+                  </span>
+                </div>
+                <span className="progress-state progress-complete">✅</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {result ? (
         <>
           <section className="panel result-panel">
             <div className="result-header">
@@ -508,35 +602,6 @@ function App() {
             <div className="explanation-block">
               <p className="section-label">What happened</p>
               <p>{result.agent_trace.branch_explanation ?? "No explanation returned."}</p>
-            </div>
-          </section>
-
-          <section className="panel">
-            <div className="timeline-header">
-              <div>
-                <p className="section-label">Agent walkthrough</p>
-                <h2>Short reasoning steps</h2>
-              </div>
-              <p className="timeline-helper">
-                This is a simple explanation of what the agent did, without raw internal reasoning.
-              </p>
-            </div>
-
-            <div className="friendly-steps">
-              {buildFriendlySteps(result).map((step, index) => (
-                <div key={`${step.title}-${index}`} className="progress-row final-progress-row">
-                  <div className="progress-copy">
-                    <span>
-                      <strong>
-                        {step.icon} {step.title}
-                      </strong>
-                      {" - "}
-                      {step.description}
-                    </span>
-                  </div>
-                  <span className="progress-state progress-complete">✅</span>
-                </div>
-              ))}
             </div>
           </section>
 
@@ -624,6 +689,7 @@ function App() {
                         <dt>Confidence</dt>
                         <dd>{formatConfidence(stage.confidence)}</dd>
                       </div>
+                      {renderStageModel(result, stageKey)}
                       {renderStageMeta(stage, stageKey)}
                       {"attempts" in stage ? (
                         <div>
