@@ -52,6 +52,7 @@ def test_kb_retriever_returns_grounding_results() -> None:
     retriever = KnowledgeBaseRetriever(
         vector_store=FakeVectorStore(),
         seed_file="config/knowledge_base.json",
+        classification_taxonomy_file="config/classification_taxonomy.json",
         max_results=3,
     )
     processed_error = ProcessedErrorRecord(
