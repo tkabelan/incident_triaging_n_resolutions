@@ -60,6 +60,13 @@ source .venv311/bin/activate
 python -m uvicorn app.main:app --reload --port 8001
 ```
 
+Production-style backend startup:
+
+```bash
+source .venv311/bin/activate
+./scripts/start_backend.sh
+```
+
 Process one error with `curl`:
 
 ```bash
@@ -116,3 +123,9 @@ It runs:
 - `ruff check app tests`
 - `pytest -q`
 - frontend `npm run build`
+
+## Azure Backend
+
+Backend Azure App Service notes are in:
+
+- `docs/azure_backend.md`

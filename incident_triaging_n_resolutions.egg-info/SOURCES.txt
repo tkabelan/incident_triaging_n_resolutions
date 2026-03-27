@@ -5,6 +5,7 @@ pyproject.toml
 ./app/main.py
 ./app/run_first_three_errors.py
 ./app/run_single_error.py
+./app/test_anthropic_call.py
 ./app/test_openai_call.py
 ./app/agents/__init__.py
 ./app/agents/classification_service.py
@@ -13,6 +14,7 @@ pyproject.toml
 ./app/api/routes/__init__.py
 ./app/api/routes/errors.py
 ./app/api/routes/health.py
+./app/classification/taxonomy.py
 ./app/core/__init__.py
 ./app/core/config.py
 ./app/ingestion/__init__.py
@@ -53,6 +55,7 @@ app/logging_config.py
 app/main.py
 app/run_first_three_errors.py
 app/run_single_error.py
+app/test_anthropic_call.py
 app/test_openai_call.py
 app/agents/__init__.py
 app/agents/classification_service.py
@@ -61,6 +64,7 @@ app/api/app.py
 app/api/routes/__init__.py
 app/api/routes/errors.py
 app/api/routes/health.py
+app/classification/taxonomy.py
 app/core/__init__.py
 app/core/config.py
 app/ingestion/__init__.py
@@ -78,6 +82,7 @@ app/mcp_server/web_search.py
 app/normalization/__init__.py
 app/normalization/error_normalizer.py
 app/normalization/taxonomy.py
+app/observability/langsmith.py
 app/retrieval/__init__.py
 app/retrieval/kb_retriever.py
 app/retrieval/local_embeddings.py

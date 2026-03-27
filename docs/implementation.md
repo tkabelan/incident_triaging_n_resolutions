@@ -8,13 +8,15 @@ The backend agentic phase is complete.
 
 The agentic backend and the first frontend MVP are complete.
 
-The current scope is LangSmith observability and traceability:
+The current scope is deployment readiness for local development and Azure App Services:
 
-1. Add LangSmith configuration and env wiring
-2. Trace LangGraph workflow runs in LangSmith
-3. Attach useful run metadata and tags
-4. Improve debugging visibility for planner, verification, and fallback branches
-5. Surface trace context in a dedicated frontend tab
+1. Add environment-aware deployment config
+2. Add backend CORS and frontend origin support
+3. Prepare the FastAPI backend for Azure App Service
+4. Prepare the frontend build and runtime for Azure App Service
+5. Define a deployment-safe storage strategy
+6. Add Azure deployment workflows
+7. Document local and Azure deployment steps
 
 ## Status
 
@@ -67,6 +69,13 @@ The current scope is LangSmith observability and traceability:
 - [ ] Task 5.4: Trace node-level decisions and failures
 - [ ] Task 5.5: Add a frontend Trace tab
 - [ ] Task 5.6: Document LangSmith local usage
+- [x] Task 6.1: Add environment-aware deployment config
+- [x] Task 6.2: Add backend CORS and frontend origin support
+- [x] Task 6.3: Prepare the backend for Azure App Service
+- [ ] Task 6.4: Prepare the frontend for Azure App Service
+- [ ] Task 6.5: Define a deployment-safe storage strategy
+- [ ] Task 6.6: Add Azure deployment workflows
+- [ ] Task 6.7: Document local and Azure deployment steps
 
 ## Implemented Files
 
@@ -248,20 +257,19 @@ Current implemented workflow shape:
 
 ## Next Task
 
-The next implementation target is LangSmith instrumentation.
+The next implementation target is frontend Azure App Service readiness.
 
 Immediate next tasks:
 
-- Task 5.1: Add LangSmith configuration
-- Task 5.2: Enable LangSmith tracing for the workflow
-- Task 5.3: Add run metadata and tags
-- Task 5.5: Add a frontend Trace tab
+- Task 6.1: Add environment-aware deployment config
+- Task 6.2: Add backend CORS and frontend origin support
+- Task 6.3: Prepare the backend for Azure App Service
 
 Expected result:
 
-- LangGraph runs are visible in LangSmith
-- LLM calls, planner branches, retries, and failures are traceable outside the local UI
-- The frontend can link the current run to its LangSmith trace context
+- The app can run locally and in Azure from the same codebase
+- Backend and frontend deployment assumptions are explicit
+- The repo is ready for Azure deployment workflows and documentation
 - developers can debug one run from LangSmith without relying only on console logs or the frontend
 
 ## Canonical References

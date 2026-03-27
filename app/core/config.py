@@ -23,6 +23,12 @@ class AppConfig(BaseModel):
     port: int
 
 
+class DeploymentConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    cors_allowed_origins: list[str] = []
+
+
 class LoggingConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -125,6 +131,7 @@ class Settings(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     app: AppConfig
+    deployment: DeploymentConfig
     logging: LoggingConfig
     storage: StorageConfig
     ingestion: IngestionConfig

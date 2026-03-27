@@ -17,6 +17,7 @@ def test_load_config(tmp_path: Path) -> None:
                     "host": "127.0.0.1",
                     "port": 9000,
                 },
+                "deployment": {"cors_allowed_origins": ["http://localhost:5173"]},
                 "logging": {"level": "DEBUG", "format": "%(message)s"},
                 "storage": {"raw_data_dir": "raw", "processed_data_dir": "processed"},
                 "ingestion": {"error_data_dir": "error_data", "default_csv_file": "errors.csv"},
@@ -77,6 +78,7 @@ def test_load_config(tmp_path: Path) -> None:
     settings = load_config(config_path)
 
     assert settings.app.name == "test-service"
+    assert settings.deployment.cors_allowed_origins == ["http://localhost:5173"]
     assert settings.logging.level == "DEBUG"
     assert settings.workflow.verification_confidence_threshold == 0.6
     assert settings.workflow.max_classification_retries == 1
@@ -96,6 +98,7 @@ def test_load_config_requires_langsmith_key_when_enabled(
                     "host": "127.0.0.1",
                     "port": 9000,
                 },
+                "deployment": {"cors_allowed_origins": ["http://localhost:5173"]},
                 "logging": {"level": "DEBUG", "format": "%(message)s"},
                 "storage": {"raw_data_dir": "raw", "processed_data_dir": "processed"},
                 "ingestion": {"error_data_dir": "error_data", "default_csv_file": "errors.csv"},

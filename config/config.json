@@ -5,6 +5,12 @@
     "host": "127.0.0.1",
     "port": 8000
   },
+  "deployment": {
+    "cors_allowed_origins": [
+      "http://127.0.0.1:5173",
+      "http://localhost:5173"
+    ]
+  },
   "logging": {
     "level": "INFO",
     "format": "%(asctime)s %(levelname)s [%(name)s] [corr=%(correlation_id)s] %(message)s"

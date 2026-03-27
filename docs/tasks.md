@@ -134,6 +134,132 @@ Test in isolation:
 
 - Follow the README steps from a clean shell and confirm tracing works.
 
+## Phase 6: Local and Azure Deployment Readiness
+
+Goal:
+
+Make the app run cleanly both on a developer machine and on Azure App Services without splitting the codebase.
+
+### Task 6.1: Add environment-aware deployment config
+
+Scope:
+
+- Define how local and Azure-specific settings are supplied.
+- Keep one base config and support safe overrides through environment variables or deployment-specific config.
+
+Acceptance criteria:
+
+- Local and Azure deployments can use different runtime settings without code changes.
+- No secrets are stored in tracked config files.
+
+Test in isolation:
+
+- Load local settings and Azure-style override settings successfully.
+
+### Task 6.2: Add backend CORS and frontend origin support
+
+Scope:
+
+- Add configurable CORS settings to the FastAPI backend.
+- Support the deployed frontend origin as an allowed browser client.
+
+Acceptance criteria:
+
+- Local frontend can call local backend.
+- Azure frontend can call Azure backend from the browser without CORS failures.
+
+Test in isolation:
+
+- Verify the backend responds with the expected CORS headers for allowed origins.
+
+### Task 6.3: Prepare the backend for Azure App Service
+
+Scope:
+
+- Define the production startup command for FastAPI on App Service.
+- Ensure the backend can boot with App Service environment variables and app settings.
+
+Acceptance criteria:
+
+- Backend startup is documented and compatible with Azure App Service.
+- Health endpoint works in the deployed environment.
+
+Test in isolation:
+
+- Run the backend locally using the production-style startup command.
+
+Implementation notes:
+
+- Add `gunicorn` as the production process manager.
+- Add a backend startup script that respects `PORT`, `HOST`, and `WEB_CONCURRENCY`.
+- Add backend-specific Azure deployment guidance and required app settings.
+
+### Task 6.4: Prepare the frontend for Azure App Service
+
+Scope:
+
+- Configure the frontend to use a deployed backend origin.
+- Ensure the production build serves the built `dist` output correctly.
+
+Acceptance criteria:
+
+- Frontend build works with a configured backend origin.
+- Frontend can be deployed independently from the backend.
+
+Test in isolation:
+
+- Build the frontend locally with a non-local backend origin value.
+
+### Task 6.5: Define a deployment-safe storage strategy
+
+Scope:
+
+- Document how local filesystem storage is used in development.
+- Define what is acceptable for Azure demo deployment and what needs hardening later.
+
+Acceptance criteria:
+
+- Chroma, raw storage, and processed storage behavior are explicitly documented for local and Azure.
+- The repo clearly distinguishes demo-grade storage from production-grade storage.
+
+Test in isolation:
+
+- Review the storage config and confirm both local and Azure assumptions are explicit.
+
+### Task 6.6: Add Azure deployment workflows
+
+Scope:
+
+- Add GitHub Actions workflows for backend and frontend deployment to Azure App Services.
+- Keep CI and deployment stages clearly separated.
+
+Acceptance criteria:
+
+- Backend and frontend each have a deploy workflow suitable for Azure.
+- Deployment inputs are driven by GitHub secrets and Azure publish credentials or federated auth.
+
+Test in isolation:
+
+- Validate that the workflows render correctly and reference the expected app names and secrets.
+
+### Task 6.7: Document local and Azure deployment steps
+
+Scope:
+
+- Add a deployment guide covering:
+  - local run
+  - Azure setup
+  - required app settings
+  - backend and frontend deployment flow
+
+Acceptance criteria:
+
+- A developer can clone the repo and understand both local and Azure deployment paths.
+
+Test in isolation:
+
+- Follow the guide from a clean machine setup and confirm the steps are actionable.
+
 ## Phase 1: Project Initialization and Core Structure
 
 Goal:
