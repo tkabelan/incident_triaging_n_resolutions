@@ -75,7 +75,7 @@ The current scope is deployment readiness for local development and Azure App Se
 - [x] Task 6.4: Prepare the frontend for Azure App Service
 - [x] Task 6.5: Define a deployment-safe storage strategy
 - [x] Task 6.6: Add Azure deployment workflows
-- [ ] Task 6.7: Document local and Azure deployment steps
+- [x] Task 6.7: Document local and Azure deployment steps
 
 ## Implemented Files
 

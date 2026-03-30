@@ -278,6 +278,11 @@ Test in isolation:
 
 - Follow the guide from a clean machine setup and confirm the steps are actionable.
 
+Implementation notes:
+
+- Consolidate local run steps, Azure backend steps, Azure frontend steps, and validation order.
+- Reference the existing backend, frontend, and storage-specific documents rather than relying on implicit setup knowledge.
+
 ## Phase 1: Project Initialization and Core Structure
 
 Goal:

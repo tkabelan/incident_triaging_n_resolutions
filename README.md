@@ -158,3 +158,7 @@ Frontend Azure App Service notes are in:
 Storage strategy notes are in:
 
 - `docs/storage_strategy.md`
+
+End-to-end local and Azure deployment steps are in:
+
+- `docs/deployment.md`
