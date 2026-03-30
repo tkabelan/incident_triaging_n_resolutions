@@ -210,6 +210,12 @@ Test in isolation:
 
 - Build the frontend locally with a non-local backend origin value.
 
+Implementation notes:
+
+- Use `VITE_BACKEND_ORIGIN` as a build-time production backend URL.
+- Keep the Vite dev proxy for local development only.
+- Add a production static-serve startup script for the built `dist` output.
+
 ### Task 6.5: Define a deployment-safe storage strategy
 
 Scope:
@@ -226,6 +232,12 @@ Test in isolation:
 
 - Review the storage config and confirm both local and Azure assumptions are explicit.
 
+Implementation notes:
+
+- Document the current local-disk storage layout for raw, processed, SQLite, and Chroma state.
+- Make the Azure demo assumptions explicit for single-instance App Service deployments.
+- Clearly mark the current storage model as demo-grade rather than production-grade.
+
 ### Task 6.6: Add Azure deployment workflows
 
 Scope:
@@ -241,6 +253,12 @@ Acceptance criteria:
 Test in isolation:
 
 - Validate that the workflows render correctly and reference the expected app names and secrets.
+
+Implementation notes:
+
+- Keep CI separate from deploy workflows.
+- Add one backend deploy workflow and one frontend deploy workflow.
+- Drive deployment app names, publish profiles, and frontend backend origin from GitHub secrets or repo variables.
 
 ### Task 6.7: Document local and Azure deployment steps
 

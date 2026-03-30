@@ -4,8 +4,10 @@ import type {
   ProcessStreamEvent,
 } from "../types/agent";
 
-const PROCESS_ERROR_URL = "/api/v1/errors/process";
-const PROCESS_ERROR_STREAM_URL = "/api/v1/errors/process/stream";
+const configuredBackendOrigin = import.meta.env.VITE_BACKEND_ORIGIN?.trim() ?? "";
+const apiBaseUrl = import.meta.env.DEV ? "" : configuredBackendOrigin.replace(/\/+$/, "");
+const PROCESS_ERROR_URL = `${apiBaseUrl}/api/v1/errors/process`;
+const PROCESS_ERROR_STREAM_URL = `${apiBaseUrl}/api/v1/errors/process/stream`;
 
 export class ProcessErrorApiError extends Error {
   readonly status: number;

@@ -88,6 +88,14 @@ npm run dev
 
 The frontend expects the backend on `http://127.0.0.1:8001`.
 
+Production-style frontend build and serve:
+
+```bash
+cd frontend
+VITE_BACKEND_ORIGIN=http://127.0.0.1:8001 npm run build
+./scripts/start_frontend.sh
+```
+
 ## Local Quality Checks
 
 These match the Python CI job:
@@ -114,6 +122,8 @@ npm run build
 CI is defined in:
 
 - `.github/workflows/workflow.yml`
+- `.github/workflows/azure-backend-deploy.yml`
+- `.github/workflows/azure-frontend-deploy.yml`
 
 It runs:
 
@@ -124,8 +134,27 @@ It runs:
 - `pytest -q`
 - frontend `npm run build`
 
+Azure deploy workflows expect:
+
+- backend secrets:
+  - `AZURE_BACKEND_WEBAPP_NAME`
+  - `AZURE_BACKEND_WEBAPP_PUBLISH_PROFILE`
+- frontend secrets:
+  - `AZURE_FRONTEND_WEBAPP_NAME`
+  - `AZURE_FRONTEND_WEBAPP_PUBLISH_PROFILE`
+- frontend repo variable:
+  - `AZURE_FRONTEND_BACKEND_ORIGIN`
+
 ## Azure Backend
 
 Backend Azure App Service notes are in:
 
 - `docs/azure_backend.md`
+
+Frontend Azure App Service notes are in:
+
+- `docs/azure_frontend.md`
+
+Storage strategy notes are in:
+
+- `docs/storage_strategy.md`

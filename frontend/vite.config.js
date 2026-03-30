@@ -1,16 +1,19 @@
-var _a;
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
-var backendOrigin = (_a = process.env.VITE_BACKEND_ORIGIN) !== null && _a !== void 0 ? _a : "http://127.0.0.1:8001";
-export default defineConfig({
-    plugins: [react()],
-    server: {
-        port: 5173,
-        proxy: {
-            "/api": {
-                target: backendOrigin,
-                changeOrigin: true,
+export default defineConfig(function (_a) {
+    var mode = _a.mode;
+    var env = loadEnv(mode, process.cwd(), "");
+    var backendOrigin = env.VITE_BACKEND_ORIGIN || "http://127.0.0.1:8001";
+    return {
+        plugins: [react()],
+        server: {
+            port: 5173,
+            proxy: {
+                "/api": {
+                    target: backendOrigin,
+                    changeOrigin: true,
+                },
             },
         },
-    },
+    };
 });

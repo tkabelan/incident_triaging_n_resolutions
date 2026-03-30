@@ -22,12 +22,18 @@ The script reads these optional environment variables:
 - `HOST`
 - `PORT`
 - `WEB_CONCURRENCY`
+- `WORKER_TIMEOUT`
+- `GRACEFUL_TIMEOUT`
+- `KEEP_ALIVE`
 
 Defaults:
 
 - `HOST=0.0.0.0`
 - `PORT=8000`
 - `WEB_CONCURRENCY=2`
+- `WORKER_TIMEOUT=300`
+- `GRACEFUL_TIMEOUT=30`
+- `KEEP_ALIVE=5`
 
 ## Required App Settings
 
@@ -68,5 +74,6 @@ curl http://127.0.0.1:8000/api/v1/health
 
 ## Notes
 
+- The streaming workflow endpoint can run for longer than Gunicorn's default timeout. The startup script sets a longer worker timeout so the request can finish under App Service and local production-style runs.
 - Local filesystem storage is acceptable for a demo deployment but is not a production-grade scaling strategy for Chroma, raw records, or processed records.
 - Azure frontend deployment is handled separately from the backend.

@@ -72,9 +72,9 @@ The current scope is deployment readiness for local development and Azure App Se
 - [x] Task 6.1: Add environment-aware deployment config
 - [x] Task 6.2: Add backend CORS and frontend origin support
 - [x] Task 6.3: Prepare the backend for Azure App Service
-- [ ] Task 6.4: Prepare the frontend for Azure App Service
-- [ ] Task 6.5: Define a deployment-safe storage strategy
-- [ ] Task 6.6: Add Azure deployment workflows
+- [x] Task 6.4: Prepare the frontend for Azure App Service
+- [x] Task 6.5: Define a deployment-safe storage strategy
+- [x] Task 6.6: Add Azure deployment workflows
 - [ ] Task 6.7: Document local and Azure deployment steps
 
 ## Implemented Files
@@ -257,7 +257,7 @@ Current implemented workflow shape:
 
 ## Next Task
 
-The next implementation target is frontend Azure App Service readiness.
+The next implementation target is documenting the end-to-end local and Azure deployment steps.
 
 Immediate next tasks:
 
